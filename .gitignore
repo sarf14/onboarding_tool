@@ -78,3 +78,11 @@ nul
 *.bat
 *.sh
 !start-servers.sh
+
+# Document files (don't commit)
+*.docx
+*.pdf
+
+# Python scripts (don't commit)
+*.py
+!backend/scripts/*.py

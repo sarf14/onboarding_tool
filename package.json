@@ -1,0 +1,16 @@
+{
+  "name": "onboarding-tool-project",
+  "version": "1.0.0",
+  "main": "extract_documents.js",
+  "scripts": {
+    "extract": "node extract_all_content.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  }
+}
