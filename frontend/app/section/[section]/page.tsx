@@ -458,7 +458,7 @@ export default function SectionContentPage() {
                             color: '#333',
                             fontWeight: 700,
                             fontSize: '16px'
-                          }}>{typeof activity === 'string' ? activity : activity.name || activity}</span>
+                          }}>{typeof activity === 'string' ? activity : (activity as any).name || String(activity)}</span>
                           <div style={{
                             marginTop: '8px',
                             fontSize: '14px',

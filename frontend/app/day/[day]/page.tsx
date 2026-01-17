@@ -346,7 +346,7 @@ export default function DayContentPage() {
               textTransform: 'uppercase'
             }}>Activities</h3>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '15px', listStyle: 'none', padding: 0 }}>
-              {session.activities?.map((activity: string, idx: number) => (
+              {session.activities?.map((activity: string | { name?: string }, idx: number) => (
                 <li 
                   key={idx} 
                   onClick={() => router.push(`/day/${day}/activity/${sessionType}/${idx}`)}
@@ -391,7 +391,7 @@ export default function DayContentPage() {
                       color: '#333',
                       fontWeight: 700,
                       fontSize: '16px'
-                    }}>{typeof activity === 'string' ? activity : activity.name || activity}</span>
+                    }}>{typeof activity === 'string' ? activity : (activity as any).name || String(activity)}</span>
                     <div style={{
                       marginTop: '8px',
                       fontSize: '14px',
