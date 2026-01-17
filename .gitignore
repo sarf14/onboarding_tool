@@ -59,3 +59,22 @@ logs
 
 # OS
 Thumbs.db
+
+# Extracted files (don't commit)
+extracted/
+*.html
+*.js
+!backend/**/*.js
+!frontend/**/*.js
+!**/node_modules/**/*.js
+
+# Build outputs
+backend/dist/
+frontend/.next/
+frontend/out/
+
+# Temporary files
+nul
+*.bat
+*.sh
+!start-servers.sh

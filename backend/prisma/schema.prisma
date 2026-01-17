@@ -1,0 +1,161 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // For connection pooling (Supabase)
+}
+
+enum UserRole {
+  TRAINEE
+  MENTOR
+  ADMIN
+}
+
+enum DayStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum QuizType {
+  SECTION_QUIZ
+  FINAL_ASSESSMENT
+}
+
+enum SectionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  name          String
+  roles         UserRole[]
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Mentor-Mentee relationships
+  mentorId      String?
+  mentor        User?    @relation("MentorMentee", fields: [mentorId], references: [id])
+  mentees       User[]   @relation("MentorMentee")
+  
+  // Progress tracking
+  programStartDate DateTime? // Set when mentor is first assigned
+  currentSection    Int      @default(1)
+  
+  // Relations
+  progress      Progress[]
+  quizzes       Quiz[]
+  activities    Activity[]
+  mentorHistory MentorHistory[]
+  
+  // Legacy - kept for backward compatibility
+  tasks         Task[]
+  
+  @@map("users")
+}
+
+model MentorHistory {
+  id            String   @id @default(uuid())
+  userId        String
+  mentorId      String
+  assignedAt    DateTime @default(now())
+  assignedBy    String   // Admin user ID
+  removedAt     DateTime?
+  user          User     @relation(fields: [userId], references: [id])
+  
+  @@map("mentor_history")
+}
+
+model Progress {
+  id                String        @id @default(uuid())
+  userId            String
+  section           Int           // 1-4
+  status            SectionStatus  @default(NOT_STARTED)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  quizScore         Float?
+  activitiesCompleted Int          @default(0)
+  activitiesTotal    Int          @default(0)
+  sectionProgress   Int           @default(0) // 0-100
+  
+  user              User          @relation(fields: [userId], references: [id])
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@unique([userId, section])
+  @@map("progress")
+}
+
+model Quiz {
+  id            String     @id @default(uuid())
+  userId        String
+  section       Int?       // Section number (null for final quiz)
+  quizType      QuizType
+  questions     Json       // Array of questions
+  answers       Json       // Array of user answers
+  score         Float
+  maxScore      Float
+  percentage    Float
+  attempts      Int        @default(1)
+  bestScore     Float
+  completedAt   DateTime   @default(now())
+  timeTaken     Int?       // seconds
+  
+  user          User       @relation(fields: [userId], references: [id])
+  
+  @@map("quizzes")
+}
+
+model Activity {
+  id            String      @id @default(uuid())
+  userId        String
+  section       Int
+  activityIndex Int
+  activityName  String
+  status        TaskStatus  @default(NOT_STARTED)
+  completedAt   DateTime?
+  
+  user          User        @relation(fields: [userId], references: [id])
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@unique([userId, section, activityIndex])
+  @@map("activities")
+}
+
+model Task {
+  id            String      @id @default(uuid())
+  userId        String
+  day           Int
+  taskUrl       String
+  taskName      String
+  status        TaskStatus  @default(NOT_STARTED)
+  completedAt   DateTime?
+  submittedAt   DateTime?
+  
+  user          User        @relation(fields: [userId], references: [id])
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@map("tasks")
+}
