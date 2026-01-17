@@ -21,6 +21,7 @@ interface User {
     name: string;
     email: string;
   };
+  mentorId?: string;
 }
 
 export default function AdminPanel() {
