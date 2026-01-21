@@ -47,8 +47,19 @@ import h2hRoutes from './routes/h2h';
 import { chatCleanupService } from './services/chatCleanup';
 import { quizCleanupService } from './services/quizCleanup';
 
-// Health check endpoint
+// Health check endpoint (lightweight - no DB query for ping services)
 app.get('/api/health', async (req, res) => {
+  // Lightweight health check for ping services (keeps Render awake)
+  // Use /api/health/db for full health check with database verification
+  res.json({ 
+    status: 'ok', 
+    message: 'Onboarding API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Full health check with database verification (for monitoring/debugging)
+app.get('/api/health/db', async (req, res) => {
   try {
     // Check database connection
     const { error } = await supabase.from('users').select('id').limit(1);
