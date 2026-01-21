@@ -42,7 +42,9 @@ import adminRoutes from './routes/admin';
 import quizRoutes from './routes/quizzes';
 import taskRoutes from './routes/tasks';
 import contentRoutes from './routes/content';
+import chatRoutes from './routes/chat';
 import h2hRoutes from './routes/h2h';
+import { chatCleanupService } from './services/chatCleanup';
 import { quizCleanupService } from './services/quizCleanup';
 
 // Health check endpoint
@@ -75,6 +77,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/h2h', h2hRoutes);
 
 // Start server
@@ -84,12 +87,14 @@ const server = app.listen(config.port, () => {
   console.log(`🌐 Frontend URL: ${config.frontendUrl}`);
   
   // Start cleanup services
+  chatCleanupService.start();
   quizCleanupService.start();
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
+  chatCleanupService.stop();
   quizCleanupService.stop();
   server.close(() => {
     process.exit(0);
@@ -98,6 +103,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   console.log('SIGINT signal received: closing HTTP server');
+  chatCleanupService.stop();
   quizCleanupService.stop();
   server.close(() => {
     process.exit(0);
