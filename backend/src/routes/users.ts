@@ -29,20 +29,18 @@ router.get('/', authenticate, authorize('ADMIN'), async (req, res) => {
 
     if (error) throw error;
 
-    // Get mentor info for each user
-    const usersWithMentors = await Promise.all(
-      (users || []).map(async (user) => {
-        if (user.mentorId) {
-          const { data: mentor } = await supabase
-            .from('users')
-            .select('id, name, email')
-            .eq('id', user.mentorId)
-            .single();
-          return { ...user, mentor };
-        }
-        return { ...user, mentor: null };
-      })
-    );
+    // Batch fetch all mentors in parallel for faster response
+    const mentorIds = [...new Set((users || []).filter(u => u.mentorId).map(u => u.mentorId))];
+    const mentorsResult = mentorIds.length > 0 ? await supabase
+      .from('users')
+      .select('id, name, email')
+      .in('id', mentorIds) : { data: [] };
+    
+    const mentorsMap = new Map((mentorsResult.data || []).map(m => [m.id, m]));
+    const usersWithMentors = (users || []).map(user => ({
+      ...user,
+      mentor: user.mentorId ? mentorsMap.get(user.mentorId) || null : null
+    }));
 
     res.json({
       users: usersWithMentors,
@@ -79,22 +77,21 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get mentor info
-    let mentor = null;
-    if (user.mentorId) {
-      const { data: mentorData } = await supabase
+    // Get mentor and mentees in parallel for faster response
+    const [mentorResult, menteesResult] = await Promise.all([
+      user.mentorId ? supabase
         .from('users')
         .select('id, name, email')
         .eq('id', user.mentorId)
-        .single();
-      mentor = mentorData;
-    }
+        .single() : Promise.resolve({ data: null }),
+      supabase
+        .from('users')
+        .select('id, name, email, "currentDay", "programStartDate"')
+        .eq('mentorId', id)
+    ]);
 
-    // Get mentees
-    const { data: mentees } = await supabase
-      .from('users')
-      .select('id, name, email, "currentDay", "programStartDate"')
-      .eq('mentorId', id);
+    const mentor = mentorResult.data;
+    const mentees = menteesResult.data || [];
 
     res.json({ user: { ...user, mentor, mentees: mentees || [] } });
   } catch (error: any) {

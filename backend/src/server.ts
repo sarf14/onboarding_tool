@@ -42,6 +42,8 @@ import adminRoutes from './routes/admin';
 import quizRoutes from './routes/quizzes';
 import taskRoutes from './routes/tasks';
 import contentRoutes from './routes/content';
+import h2hRoutes from './routes/h2h';
+import { quizCleanupService } from './services/quizCleanup';
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -73,6 +75,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/content', contentRoutes);
+<<<<<<< HEAD
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
@@ -84,12 +87,36 @@ process.on('SIGINT', () => {
   console.log('SIGINT signal received: closing HTTP server');
   process.exit(0);
 });
+=======
+app.use('/api/chat', chatRoutes);
+app.use('/api/h2h', h2hRoutes);
+>>>>>>> c5e62bc (Update backend with optimizations and H2H tool)
 
 // Start server
 const server = app.listen(config.port, () => {
   console.log(`🚀 Server running on port ${config.port}`);
   console.log(`📊 Environment: ${config.nodeEnv}`);
   console.log(`🌐 Frontend URL: ${config.frontendUrl}`);
+  
+  // Start cleanup services
+  quizCleanupService.start();
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  quizCleanupService.stop();
+  server.close(() => {
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  quizCleanupService.stop();
+  server.close(() => {
+    process.exit(0);
+  });
 });
 
 export default app;

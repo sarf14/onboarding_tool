@@ -39,67 +39,92 @@ router.get('/mentees', async (req: AuthRequest, res) => {
 
     if (menteesError) throw menteesError;
 
-    // Get progress and quiz scores for each mentee
-    const menteesWithProgress = await Promise.all(
-      (mentees || []).map(async (mentee) => {
-        // Get progress
-        const { data: progress } = await supabase
-          .from('progress')
-          .select('*')
-          .eq('userId', mentee.id)
-          .order('day', { ascending: true });
+    // Batch fetch all data in parallel for maximum speed
+    const menteeIds = (mentees || []).map(m => m.id);
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-        const completedSections = (progress || []).filter((p: any) => {
-          return p.status === 'COMPLETED' && p.day <= 4;
-        }).length;
-        const overallProgress = Math.round((completedSections / 4) * 100);
-
-        // Get quiz scores (database uses DAY_END_QUIZ instead of SECTION_QUIZ)
-        const { data: quizzes } = await supabase
-          .from('quizzes')
-          .select('day, percentage, "quizType", "completedAt", score, "maxScore", id')
-          .eq('userId', mentee.id)
-          .order('completedAt', { ascending: false });
-        
-        // Map quiz scores to section progress
-        const sectionProgressWithQuizzes = (progress || []).map((p: any) => {
-          const section = p.day; // Progress uses day column
-          const sectionQuiz = quizzes?.find((q: any) => {
-            return q.day === section && section <= 4;
-          });
-          
-          return {
-            ...p,
-            quizScore: sectionQuiz?.percentage || p.dayEndQuizScore,
-            quizCompletedAt: sectionQuiz?.completedAt,
-            passedQuiz: sectionQuiz ? sectionQuiz.percentage >= 80 : (p.dayEndQuizScore ? p.dayEndQuizScore >= 80 : false),
-            quizId: sectionQuiz?.id,
-          };
-        });
-
-        // Get activities completed (if table exists)
-        let activities: any[] = [];
+    // Fetch all progress, quizzes, and activities in parallel
+    const [progressResult, quizzesResult, activitiesResult] = await Promise.all([
+      menteeIds.length > 0 ? supabase
+        .from('progress')
+        .select('*')
+        .in('userId', menteeIds)
+        .order('day', { ascending: true }) : Promise.resolve({ data: [] }),
+      menteeIds.length > 0 ? supabase
+        .from('quizzes')
+        .select('userId, day, percentage, "quizType", "completedAt", score, "maxScore", id')
+        .in('userId', menteeIds)
+        .gte('completedAt', oneDayAgo.toISOString())
+        .order('completedAt', { ascending: false }) : Promise.resolve({ data: [] }),
+      menteeIds.length > 0 ? (async () => {
         try {
-          const { data: activitiesData } = await supabase
+          const result = await supabase
             .from('activities')
-            .select('section, day, "activityIndex"')
-            .eq('userId', mentee.id)
+            .select('userId, section, day, "activityIndex"')
+            .in('userId', menteeIds)
             .eq('status', 'COMPLETED');
-          activities = activitiesData || [];
-        } catch (e) {
-          // Activities table may not exist, ignore
+          return result;
+        } catch {
+          return { data: [] };
         }
+      })() : Promise.resolve({ data: [] })
+    ]);
 
+    // Group data by userId
+    const progressByUser = new Map<string, any[]>();
+    const quizzesByUser = new Map<string, any[]>();
+    const activitiesByUser = new Map<string, any[]>();
+
+    (progressResult.data || []).forEach((p: any) => {
+      if (!progressByUser.has(p.userId)) progressByUser.set(p.userId, []);
+      progressByUser.get(p.userId)!.push(p);
+    });
+
+    (quizzesResult.data || []).forEach((q: any) => {
+      if (!quizzesByUser.has(q.userId)) quizzesByUser.set(q.userId, []);
+      quizzesByUser.get(q.userId)!.push(q);
+    });
+
+    (activitiesResult.data || []).forEach((a: any) => {
+      if (!activitiesByUser.has(a.userId)) activitiesByUser.set(a.userId, []);
+      activitiesByUser.get(a.userId)!.push(a);
+    });
+
+    // Map data to mentees (no async operations needed)
+    const menteesWithProgress = (mentees || []).map((mentee) => {
+      const progress = progressByUser.get(mentee.id) || [];
+      const quizzes = quizzesByUser.get(mentee.id) || [];
+      const activities = activitiesByUser.get(mentee.id) || [];
+
+      const completedSections = progress.filter((p: any) => {
+        return p.status === 'COMPLETED' && p.day <= 4;
+      }).length;
+      const overallProgress = Math.round((completedSections / 4) * 100);
+
+      // Map quiz scores to section progress
+      const sectionProgressWithQuizzes = progress.map((p: any) => {
+        const section = p.day;
+        const sectionQuiz = quizzes.find((q: any) => q.day === section && section <= 4);
+        
         return {
-          ...mentee,
-          progress: overallProgress,
-          completedSections,
-          sectionProgress: sectionProgressWithQuizzes,
-          quizzes: quizzes || [],
-          activitiesCompleted: (activities || []).length,
+          ...p,
+          quizScore: sectionQuiz?.percentage || p.dayEndQuizScore,
+          quizCompletedAt: sectionQuiz?.completedAt,
+          passedQuiz: sectionQuiz ? sectionQuiz.percentage >= 80 : (p.dayEndQuizScore ? p.dayEndQuizScore >= 80 : false),
+          quizId: sectionQuiz?.id,
         };
-      })
-    );
+      });
+
+      return {
+        ...mentee,
+        progress: overallProgress,
+        completedSections,
+        sectionProgress: sectionProgressWithQuizzes,
+        quizzes: quizzes,
+        activitiesCompleted: activities.length,
+      };
+    });
 
     res.json({ mentees: menteesWithProgress });
   } catch (error: any) {
@@ -140,26 +165,45 @@ router.get('/mentees/:menteeId', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Mentee not found' });
     }
 
-    // Get progress
-    const { data: progress } = await supabase
-      .from('progress')
-      .select('*')
-      .eq('userId', menteeId)
-      .order('day', { ascending: true });
+    // Get progress, quizzes, and activities in parallel for faster response
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    
+    const [progressResult, quizzesResult, activitiesResult] = await Promise.all([
+      supabase
+        .from('progress')
+        .select('*')
+        .eq('userId', menteeId)
+        .order('day', { ascending: true }),
+      supabase
+        .from('quizzes')
+        .select('*')
+        .eq('userId', menteeId)
+        .gte('completedAt', oneDayAgo.toISOString())
+        .order('completedAt', { ascending: false }),
+      (async () => {
+        try {
+          const result = await supabase
+            .from('activities')
+            .select('*')
+            .eq('userId', menteeId)
+            .order('day', { ascending: true })
+            .order('activityIndex', { ascending: true });
+          return result;
+        } catch {
+          return { data: [] };
+        }
+      })()
+    ]);
 
-    // Get all quizzes with full details
-    const { data: quizzes } = await supabase
-      .from('quizzes')
-      .select('*')
-      .eq('userId', menteeId)
-      .order('completedAt', { ascending: false });
+    const progress = progressResult.data || [];
+    const quizzes = quizzesResult.data || [];
+    const activities = activitiesResult.data || [];
     
     // Map quiz scores to progress
-    const progressWithQuizzes = (progress || []).map((p: any) => {
-      const section = p.day; // Progress uses day column
-      const sectionQuiz = quizzes?.find((q: any) => {
-        return q.day === section && section <= 4;
-      });
+    const progressWithQuizzes = progress.map((p: any) => {
+      const section = p.day;
+      const sectionQuiz = quizzes.find((q: any) => q.day === section && section <= 4);
       
       return {
         ...p,
@@ -169,20 +213,6 @@ router.get('/mentees/:menteeId', async (req: AuthRequest, res) => {
         quizId: sectionQuiz?.id,
       };
     });
-
-    // Get all activities (if table exists)
-    let activities: any[] = [];
-    try {
-      const { data: activitiesData } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('userId', menteeId)
-        .order('day', { ascending: true })
-        .order('activityIndex', { ascending: true });
-      activities = activitiesData || [];
-    } catch (e) {
-      // Activities table may not exist, ignore
-    }
 
     const completedSections = (progress || []).filter((p: any) => {
       return p.status === 'COMPLETED' && p.day <= 4;

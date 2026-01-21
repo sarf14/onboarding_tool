@@ -36,69 +36,80 @@ router.get('/users', async (req, res) => {
 
     if (error) throw error;
 
-    // Get mentor info and progress for each user
-    const usersWithDetails = await Promise.all(
-      (users || []).map(async (user: any) => {
-        let mentor = null;
-        if (user.mentorId) {
-          const { data: mentorData } = await supabase
-            .from('users')
-            .select('id, name, email')
-            .eq('id', user.mentorId)
-            .single();
-          mentor = mentorData;
-        }
+    // Batch fetch all data in parallel for maximum speed
+    const userIds = (users || []).map(u => u.id);
+    const mentorIds = [...new Set((users || []).filter(u => u.mentorId).map(u => u.mentorId))];
+    
+    // Fetch all mentors, progress, and quizzes in parallel
+    const [mentorsResult, progressResult, quizzesResult] = await Promise.all([
+      mentorIds.length > 0 ? supabase
+        .from('users')
+        .select('id, name, email')
+        .in('id', mentorIds) : Promise.resolve({ data: [] }),
+      userIds.length > 0 ? supabase
+        .from('progress')
+        .select('*')
+        .in('userId', userIds)
+        .order('day', { ascending: true }) : Promise.resolve({ data: [] }),
+      userIds.length > 0 ? supabase
+        .from('quizzes')
+        .select('userId, day, percentage, "quizType", "completedAt"')
+        .in('userId', userIds)
+        .in('quizType', ['DAY_END_QUIZ'])
+        .order('completedAt', { ascending: false }) : Promise.resolve({ data: [] })
+    ]);
 
-        // Get progress
-        const { data: progress } = await supabase
-          .from('progress')
-          .select('*')
-          .eq('userId', user.id)
-          .order('day', { ascending: true });
+    const mentorsMap = new Map((mentorsResult.data || []).map(m => [m.id, m]));
+    const progressByUser = new Map<string, any[]>();
+    const quizzesByUser = new Map<string, any[]>();
 
-        // Get quiz scores for sections (days 1-4)
-        // Note: Database uses DAY_END_QUIZ instead of SECTION_QUIZ
-        const { data: quizzes } = await supabase
-          .from('quizzes')
-          .select('day, percentage, "quizType", "completedAt"')
-          .eq('userId', user.id)
-          .in('quizType', ['DAY_END_QUIZ'])
-          .order('completedAt', { ascending: false });
+    // Group progress and quizzes by userId
+    (progressResult.data || []).forEach((p: any) => {
+      if (!progressByUser.has(p.userId)) progressByUser.set(p.userId, []);
+      progressByUser.get(p.userId)!.push(p);
+    });
 
-        // Map quiz scores to progress entries
-        const progressWithQuizzes = (progress || []).map((p: any) => {
-          const section = p.day; // Progress uses day column
-          const sectionQuiz = quizzes?.find((q: any) => {
-            return q.day === section && section <= 4;
-          });
-          
-          return {
-            ...p,
-            quizScore: sectionQuiz?.percentage || p.dayEndQuizScore,
-            quizCompletedAt: sectionQuiz?.completedAt,
-            passedQuiz: sectionQuiz ? sectionQuiz.percentage >= 80 : (p.dayEndQuizScore ? p.dayEndQuizScore >= 80 : false),
-          };
-        });
+    (quizzesResult.data || []).forEach((q: any) => {
+      if (!quizzesByUser.has(q.userId)) quizzesByUser.set(q.userId, []);
+      quizzesByUser.get(q.userId)!.push(q);
+    });
 
-        const completedSections = progressWithQuizzes.filter((p: any) => {
-          const isCompleted = p.status === 'COMPLETED';
-          // Only count days 1-4 as sections
-          if (p.day) {
-            return isCompleted && p.day <= 4;
-          }
-          return isCompleted;
-        }).length;
-        const overallProgress = Math.round((completedSections / 4) * 100);
+    // Map data to users (no async operations needed)
+    const usersWithDetails = (users || []).map((user: any) => {
+      const mentor = user.mentorId ? mentorsMap.get(user.mentorId) || null : null;
+      const progress = progressByUser.get(user.id) || [];
+      const quizzes = quizzesByUser.get(user.id) || [];
 
+      // Map quiz scores to progress entries
+      const progressWithQuizzes = progress.map((p: any) => {
+        const section = p.day;
+        const sectionQuiz = quizzes.find((q: any) => q.day === section && section <= 4);
+        
         return {
-          ...user,
-          mentor,
-          progress: overallProgress,
-          completedSections,
-          sectionProgress: progressWithQuizzes,
+          ...p,
+          quizScore: sectionQuiz?.percentage || p.dayEndQuizScore,
+          quizCompletedAt: sectionQuiz?.completedAt,
+          passedQuiz: sectionQuiz ? sectionQuiz.percentage >= 80 : (p.dayEndQuizScore ? p.dayEndQuizScore >= 80 : false),
         };
-      })
-    );
+      });
+
+      const completedSections = progressWithQuizzes.filter((p: any) => {
+        const isCompleted = p.status === 'COMPLETED';
+        if (p.day) {
+          return isCompleted && p.day <= 4;
+        }
+        return isCompleted;
+      }).length;
+      const overallProgress = Math.round((completedSections / 4) * 100);
+
+      return {
+        ...user,
+        mentor,
+        progress: overallProgress,
+        completedSections,
+        sectionProgress: progressWithQuizzes,
+      };
+    });
 
     res.json({
       users: usersWithDetails,
@@ -389,20 +400,25 @@ router.get('/mentors', async (req, res) => {
 
     if (error) throw error;
 
-    // Get mentee count for each mentor
-    const mentorsWithCounts = await Promise.all(
-      (mentors || []).map(async (mentor) => {
-        const { count } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('mentorId', mentor.id);
-
-        return {
-          ...mentor,
-          menteeCount: count || 0,
-        };
-      })
-    );
+    // Batch fetch all mentee counts in parallel
+    const mentorIds = mentors.map(m => m.id);
+    const menteeCounts = mentorIds.length > 0 ? await supabase
+      .from('users')
+      .select('mentorId')
+      .in('mentorId', mentorIds) : { data: [] };
+    
+    // Count mentees per mentor
+    const countMap = new Map<string, number>();
+    (menteeCounts.data || []).forEach((u: any) => {
+      if (u.mentorId) {
+        countMap.set(u.mentorId, (countMap.get(u.mentorId) || 0) + 1);
+      }
+    });
+    
+    const mentorsWithCounts = mentors.map(mentor => ({
+      ...mentor,
+      menteeCount: countMap.get(mentor.id) || 0
+    }));
 
     res.json({ mentors: mentorsWithCounts });
   } catch (error: any) {
@@ -532,6 +548,317 @@ router.delete('/users/:userId', async (req, res) => {
   } catch (error: any) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Failed to delete user', details: error.message });
+  }
+});
+
+// Reset progress for users who completed sections/quizzes
+router.post('/reset-completed-progress', async (req, res) => {
+  try {
+    // Get all users who have completed sections (status = COMPLETED for days 1-4)
+    const { data: completedProgress, error: progressError } = await supabase
+      .from('progress')
+      .select('userId')
+      .eq('status', 'COMPLETED')
+      .lte('day', 4);
+
+    if (progressError) throw progressError;
+
+    // Get unique user IDs
+    const userIds = [...new Set((completedProgress || []).map((p: any) => p.userId))];
+
+    if (userIds.length === 0) {
+      return res.json({ 
+        message: 'No users with completed progress found',
+        resetCount: 0 
+      });
+    }
+
+    // Delete progress for these users
+    const { error: deleteProgressError } = await supabase
+      .from('progress')
+      .delete()
+      .in('userId', userIds);
+
+    if (deleteProgressError) throw deleteProgressError;
+
+    // Delete quizzes for these users
+    const { error: deleteQuizzesError } = await supabase
+      .from('quizzes')
+      .delete()
+      .in('userId', userIds);
+
+    if (deleteQuizzesError) throw deleteQuizzesError;
+
+    // Reset currentDay to 1 for these users
+    const { error: updateUserError } = await supabase
+      .from('users')
+      .update({ currentDay: 1 })
+      .in('id', userIds);
+
+    if (updateUserError) throw updateUserError;
+
+    res.json({ 
+      message: `Successfully reset progress for ${userIds.length} users`,
+      resetCount: userIds.length,
+      userIds 
+    });
+  } catch (error: any) {
+    console.error('Reset completed progress error:', error);
+    res.status(500).json({ error: 'Failed to reset progress', details: error.message });
+  }
+});
+
+// Reset progress for ALL users
+router.post('/reset-all-progress', async (req, res) => {
+  try {
+    // Get all users
+    const { data: allUsers, error: usersError } = await supabase
+      .from('users')
+      .select('id');
+
+    if (usersError) throw usersError;
+
+    const userIds = (allUsers || []).map((u: any) => u.id);
+
+    if (userIds.length === 0) {
+      return res.json({ 
+        message: 'No users found',
+        resetCount: 0 
+      });
+    }
+
+    // Delete ALL progress records
+    const { error: deleteProgressError } = await supabase
+      .from('progress')
+      .delete()
+      .in('userId', userIds);
+
+    if (deleteProgressError) {
+      console.error('Error deleting progress:', deleteProgressError);
+      throw deleteProgressError;
+    }
+
+    // Delete ALL quizzes
+    const { error: deleteQuizzesError } = await supabase
+      .from('quizzes')
+      .delete()
+      .in('userId', userIds);
+
+    if (deleteQuizzesError) {
+      console.error('Error deleting quizzes:', deleteQuizzesError);
+      throw deleteQuizzesError;
+    }
+
+    // Delete ALL activities (if table exists)
+    try {
+      const { error: deleteActivitiesError } = await supabase
+        .from('activities')
+        .delete()
+        .in('userId', userIds);
+
+      if (deleteActivitiesError && !deleteActivitiesError.message?.includes('does not exist')) {
+        console.error('Error deleting activities:', deleteActivitiesError);
+        // Don't throw - activities table might not exist
+      }
+    } catch (e) {
+      // Activities table might not exist, ignore
+      console.warn('Activities table might not exist, skipping deletion');
+    }
+
+    // Delete ALL tasks (if table exists)
+    try {
+      const { error: deleteTasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .in('userId', userIds);
+
+      if (deleteTasksError && !deleteTasksError.message?.includes('does not exist')) {
+        console.error('Error deleting tasks:', deleteTasksError);
+        // Don't throw - tasks table might not exist
+      }
+    } catch (e) {
+      // Tasks table might not exist, ignore
+      console.warn('Tasks table might not exist, skipping deletion');
+    }
+
+    // Reset currentDay to 1 for ALL users
+    const { error: updateUserError } = await supabase
+      .from('users')
+      .update({ currentDay: 1 })
+      .in('id', userIds);
+
+    if (updateUserError) {
+      console.error('Error updating users:', updateUserError);
+      throw updateUserError;
+    }
+
+    // Verify deletion - check if any progress records remain
+    const { data: remainingProgress, error: checkProgressError } = await supabase
+      .from('progress')
+      .select('id')
+      .in('userId', userIds)
+      .limit(1);
+
+    if (checkProgressError) {
+      console.warn('Could not verify progress deletion:', checkProgressError);
+    } else if (remainingProgress && remainingProgress.length > 0) {
+      console.warn(`Warning: ${remainingProgress.length} progress records still exist after deletion`);
+    }
+
+    // Verify deletion - check if any quiz records remain
+    const { data: remainingQuizzes, error: checkQuizzesError } = await supabase
+      .from('quizzes')
+      .select('id')
+      .in('userId', userIds)
+      .limit(1);
+
+    if (checkQuizzesError) {
+      console.warn('Could not verify quiz deletion:', checkQuizzesError);
+    } else if (remainingQuizzes && remainingQuizzes.length > 0) {
+      console.warn(`Warning: ${remainingQuizzes.length} quiz records still exist after deletion`);
+    }
+
+    // Get final counts for verification
+    const { count: finalProgressCount } = await supabase
+      .from('progress')
+      .select('*', { count: 'exact', head: true })
+      .in('userId', userIds);
+
+    const { count: finalQuizCount } = await supabase
+      .from('quizzes')
+      .select('*', { count: 'exact', head: true })
+      .in('userId', userIds);
+
+    res.json({ 
+      message: `Successfully reset progress for ALL ${userIds.length} users`,
+      resetCount: userIds.length,
+      userIds,
+      verification: {
+        remainingProgressRecords: finalProgressCount || 0,
+        remainingQuizRecords: finalQuizCount || 0,
+        allCleared: (finalProgressCount || 0) === 0 && (finalQuizCount || 0) === 0
+      }
+    });
+  } catch (error: any) {
+    console.error('Reset all progress error:', error);
+    res.status(500).json({ error: 'Failed to reset all progress', details: error.message });
+  }
+});
+
+// Reset everything: Delete all quiz progress and unassign all mentors
+router.post('/reset-everything', async (req, res) => {
+  try {
+    // Get all users
+    const { data: allUsers, error: usersError } = await supabase
+      .from('users')
+      .select('id');
+
+    if (usersError) throw usersError;
+
+    const userIds = (allUsers || []).map((u: any) => u.id);
+
+    if (userIds.length === 0) {
+      return res.json({ 
+        message: 'No users found',
+        resetCount: 0 
+      });
+    }
+
+    // Delete ALL quiz records
+    const { error: deleteQuizzesError } = await supabase
+      .from('quizzes')
+      .delete()
+      .in('userId', userIds);
+
+    if (deleteQuizzesError) {
+      console.error('Error deleting quizzes:', deleteQuizzesError);
+      throw deleteQuizzesError;
+    }
+
+    // Delete ALL progress records
+    const { error: deleteProgressError } = await supabase
+      .from('progress')
+      .delete()
+      .in('userId', userIds);
+
+    if (deleteProgressError) {
+      console.error('Error deleting progress:', deleteProgressError);
+      throw deleteProgressError;
+    }
+
+    // Delete ALL activities (if table exists)
+    try {
+      await supabase
+        .from('activities')
+        .delete()
+        .in('userId', userIds);
+    } catch (e) {
+      // Activities table might not exist, ignore
+    }
+
+    // Delete ALL tasks (if table exists)
+    try {
+      await supabase
+        .from('tasks')
+        .delete()
+        .in('userId', userIds);
+    } catch (e) {
+      // Tasks table might not exist, ignore
+    }
+
+    // Unassign ALL mentors (set mentorId to null for all users)
+    const { error: unassignMentorsError } = await supabase
+      .from('users')
+      .update({ mentorId: null })
+      .not('mentorId', 'is', null);
+
+    if (unassignMentorsError) {
+      console.error('Error unassigning mentors:', unassignMentorsError);
+      // Don't throw - might be no mentors assigned
+    }
+
+    // Reset currentDay to 1 for ALL users
+    const { error: updateUserError } = await supabase
+      .from('users')
+      .update({ currentDay: 1 })
+      .in('id', userIds);
+
+    if (updateUserError) {
+      console.error('Error updating users:', updateUserError);
+      throw updateUserError;
+    }
+
+    // Get final counts for verification
+    const { count: finalQuizCount } = await supabase
+      .from('quizzes')
+      .select('*', { count: 'exact', head: true })
+      .in('userId', userIds);
+
+    const { count: finalProgressCount } = await supabase
+      .from('progress')
+      .select('*', { count: 'exact', head: true })
+      .in('userId', userIds);
+
+    // Count users with mentors assigned
+    const { count: usersWithMentors } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .not('mentorId', 'is', null);
+
+    res.json({ 
+      message: `Successfully reset everything for ALL ${userIds.length} users`,
+      resetCount: userIds.length,
+      userIds,
+      verification: {
+        remainingQuizRecords: finalQuizCount || 0,
+        remainingProgressRecords: finalProgressCount || 0,
+        usersWithMentors: usersWithMentors || 0,
+        allCleared: (finalQuizCount || 0) === 0 && (finalProgressCount || 0) === 0 && (usersWithMentors || 0) === 0
+      }
+    });
+  } catch (error: any) {
+    console.error('Reset everything error:', error);
+    res.status(500).json({ error: 'Failed to reset everything', details: error.message });
   }
 });
 

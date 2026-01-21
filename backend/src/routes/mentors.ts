@@ -167,24 +167,30 @@ router.get('/mentees', authenticate, async (req: AuthRequest, res) => {
 
     if (menteesError) throw menteesError;
 
-    // Get progress for each mentee
-    const menteesWithProgress = await Promise.all(
-      (mentees || []).map(async (mentee) => {
-        const { data: progress } = await supabase
-          .from('progress')
-          .select('*')
-          .eq('userId', mentee.id);
+    // Batch fetch all progress in parallel
+    const menteeIds = (mentees || []).map(m => m.id);
+    const progressResult = menteeIds.length > 0 ? await supabase
+      .from('progress')
+      .select('*')
+      .in('userId', menteeIds) : { data: [] };
 
-        const completedDays = (progress || []).filter((p) => p.status === 'COMPLETED').length;
-        const overallProgress = Math.round((completedDays / 7) * 100);
+    const progressByUser = new Map<string, any[]>();
+    (progressResult.data || []).forEach((p: any) => {
+      if (!progressByUser.has(p.userId)) progressByUser.set(p.userId, []);
+      progressByUser.get(p.userId)!.push(p);
+    });
 
-        return {
-          ...mentee,
-          progress: overallProgress,
-          completedDays,
-        };
-      })
-    );
+    const menteesWithProgress = (mentees || []).map((mentee) => {
+      const progress = progressByUser.get(mentee.id) || [];
+      const completedDays = progress.filter((p) => p.status === 'COMPLETED').length;
+      const overallProgress = Math.round((completedDays / 7) * 100);
+
+      return {
+        ...mentee,
+        progress: overallProgress,
+        completedDays,
+      };
+    });
 
     res.json({ mentees: menteesWithProgress });
   } catch (error: any) {
@@ -203,20 +209,23 @@ router.get('/all', authenticate, authorize('ADMIN'), async (req, res) => {
 
     if (error) throw error;
 
-    // Get mentee count for each mentor
-    const mentorsWithCounts = await Promise.all(
-      (mentors || []).map(async (mentor) => {
-        const { count } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('mentorId', mentor.id);
-
-        return {
-          ...mentor,
-          menteeCount: count || 0,
-        };
-      })
-    );
+    // Batch fetch all mentee counts in parallel
+    const mentorIds = mentors.map(m => m.id);
+    const menteeCounts = mentorIds.length > 0 ? await supabase
+      .from('users')
+      .select('mentorId')
+      .in('mentorId', mentorIds) : { data: [] };
+    
+    // Count mentees per mentor
+    const countMap = new Map<string, number>();
+    (menteeCounts.data || []).forEach((u: any) => {
+      countMap.set(u.mentorId, (countMap.get(u.mentorId) || 0) + 1);
+    });
+    
+    const mentorsWithCounts = mentors.map(mentor => ({
+      ...mentor,
+      menteeCount: countMap.get(mentor.id) || 0
+    }));
 
     res.json({ mentors: mentorsWithCounts });
   } catch (error: any) {

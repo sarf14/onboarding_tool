@@ -97,22 +97,25 @@ router.get('/:userId', authenticate, async (req: AuthRequest, res) => {
       }
     }
 
-    const { data: progress, error } = await supabase
-      .from('progress')
-      .select('*')
-      .eq('userId', userId)
-      .order('day', { ascending: true });
+    // Get progress and quizzes in parallel for faster response
+    const [progressResult, quizzesResult] = await Promise.all([
+      supabase
+        .from('progress')
+        .select('*')
+        .eq('userId', userId)
+        .order('day', { ascending: true }),
+      supabase
+        .from('quizzes')
+        .select('day, percentage, "quizType", "completedAt"')
+        .eq('userId', userId)
+        .in('quizType', ['DAY_END_QUIZ'])
+        .order('completedAt', { ascending: false })
+    ]);
 
-    if (error) throw error;
+    if (progressResult.error) throw progressResult.error;
 
-    // Get quiz scores for sections (days 1-4)
-    // Note: Database uses DAY_END_QUIZ instead of SECTION_QUIZ
-    const { data: quizzes } = await supabase
-      .from('quizzes')
-      .select('day, percentage, "quizType", "completedAt"')
-      .eq('userId', userId)
-      .in('quizType', ['DAY_END_QUIZ'])
-      .order('completedAt', { ascending: false });
+    const progress = progressResult.data || [];
+    const quizzes = quizzesResult.data || [];
 
     // Map quiz scores to progress entries
     const progressWithQuizzes = (progress || []).map((p: any) => {

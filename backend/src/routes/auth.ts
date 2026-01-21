@@ -126,25 +126,21 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get mentor info if exists
-    let mentor = null;
-    if (user.mentorId) {
-      const { data: mentorData } = await supabase
+    // Get mentor and mentees in parallel for faster response
+    const [mentorResult, menteesResult] = await Promise.all([
+      user.mentorId ? supabase
         .from('users')
         .select('id, name, email')
         .eq('id', user.mentorId)
-        .single();
-      mentor = mentorData;
-    }
+        .single() : Promise.resolve({ data: null }),
+      user.roles.includes('MENTOR') ? supabase
+        .from('users')
+        .select('id, name, email, "currentDay", "programStartDate"')
+        .eq('mentorId', req.user!.id) : Promise.resolve({ data: [] })
+    ]);
 
-    // Get mentees if user is a mentor
-    let mentees: any[] = [];
-    const { data: menteesData } = await supabase
-      .from('users')
-      .select('id, name, email, "currentDay", "programStartDate"')
-      .eq('mentorId', req.user!.id);
-
-    mentees = menteesData || [];
+    const mentor = mentorResult.data;
+    const mentees = menteesResult.data || [];
 
     res.json({
       user: {
