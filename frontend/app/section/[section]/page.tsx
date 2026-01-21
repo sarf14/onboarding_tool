@@ -622,22 +622,19 @@ export default function SectionContentPage() {
 
               <button
                 onClick={() => {
-                  // Check if quiz is passed before allowing next section
+                  // Check if quiz is passed before allowing next section or final quiz
                   if (content.hasQuiz && !quizStatus?.passed) {
-                    alert('You must complete and pass the section quiz (80% or higher) before accessing the next section.');
+                    alert('You must complete and pass the section quiz (90% or higher) before proceeding.');
                     return;
                   }
                   if (sectionNum < totalSections) {
                     router.push(`/section/${sectionNum + 1}`);
                   } else if (sectionNum === totalSections) {
-                    // After section 4, go to dashboard
-                    router.push('/dashboard');
-                  } else {
-                    // After section 3, go to final quiz
+                    // After section 4, go to final quiz
                     router.push('/section/final/quiz');
                   }
                 }}
-                disabled={sectionNum === totalSections && !content.hasQuiz}
+                disabled={sectionNum === totalSections && content.hasQuiz && !quizStatus?.passed}
                 style={{
                   padding: '18px 45px',
                   background: sectionNum === totalSections ? 'linear-gradient(135deg, #10b981, #3a86ff)' : 'linear-gradient(135deg, #ff006e, #8338ec)',
@@ -646,15 +643,15 @@ export default function SectionContentPage() {
                   fontWeight: 900,
                   fontSize: '18px',
                   textTransform: 'uppercase',
-                  cursor: sectionNum === totalSections && !content.hasQuiz ? 'not-allowed' : 'pointer',
+                  cursor: (sectionNum === totalSections && content.hasQuiz && !quizStatus?.passed) ? 'not-allowed' : 'pointer',
                   borderRadius: '50px',
                   boxShadow: '0 10px 30px rgba(131, 56, 236, 0.5)',
                   transition: 'all 0.3s',
                   letterSpacing: '1px',
-                  opacity: sectionNum === totalSections && !content.hasQuiz ? 0.5 : 1
+                  opacity: (sectionNum === totalSections && content.hasQuiz && !quizStatus?.passed) ? 0.5 : 1
                 }}
                 onMouseEnter={(e) => {
-                  if (!(sectionNum === totalSections && !content.hasQuiz)) {
+                  if (!(sectionNum === totalSections && content.hasQuiz && !quizStatus?.passed)) {
                     e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
                     e.currentTarget.style.boxShadow = '0 15px 40px rgba(131, 56, 236, 0.7)';
                   }

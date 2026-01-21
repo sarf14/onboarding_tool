@@ -38,6 +38,7 @@ export default function AdminPanel() {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '', roles: ['TRAINEE'] });
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -48,8 +49,14 @@ export default function AdminPanel() {
       router.push('/dashboard');
       return;
     }
-    fetchUsers();
-    fetchMentors();
+    // Fetch users and mentors in parallel for faster loading
+    setIsLoading(true);
+    Promise.all([
+      fetchUsers(),
+      fetchMentors()
+    ]).catch(() => {
+      setIsLoading(false);
+    });
   }, [token, user, router]);
 
   const fetchUsers = async () => {
@@ -58,13 +65,10 @@ export default function AdminPanel() {
       if (searchTerm) params.append('search', searchTerm);
       if (selectedRole) params.append('role', selectedRole);
       const response = await api.get(`/admin/users?${params.toString()}`);
-      console.log('Admin users response:', response.data);
       const usersData = response.data.users || [];
-      console.log('Users with mentors:', usersData.filter((u: any) => u.mentor || u.mentorId).map((u: any) => ({ name: u.name, mentor: u.mentor?.name, mentorId: u.mentorId })));
       setUsers(usersData);
     } catch (error: any) {
       console.error('Failed to fetch users:', error);
-      console.error('Error details:', error.response?.data);
       alert('Failed to load users: ' + (error.response?.data?.error || error.message));
     } finally {
       setIsLoading(false);
@@ -77,6 +81,25 @@ export default function AdminPanel() {
       setMentors(response.data.mentors || []);
     } catch (error) {
       console.error('Failed to fetch mentors:', error);
+    }
+  };
+
+  const resetEverything = async () => {
+    if (!confirm('⚠️ WARNING: This will delete ALL quiz progress and unassign ALL mentors for ALL users. This action cannot be undone. Are you sure?')) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await api.post('/admin/reset-everything');
+      alert(`✅ Success! ${response.data.message}\n\nVerification:\n- Remaining quiz records: ${response.data.verification?.remainingQuizRecords || 0}\n- Remaining progress records: ${response.data.verification?.remainingProgressRecords || 0}\n- Users with mentors: ${response.data.verification?.usersWithMentors || 0}`);
+      // Refresh the user list
+      await Promise.all([fetchUsers(), fetchMentors()]);
+    } catch (error: any) {
+      console.error('Failed to reset everything:', error);
+      alert('Failed to reset: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -321,6 +344,24 @@ export default function AdminPanel() {
                 boxShadow: '0 5px 15px rgba(16, 185, 129, 0.4)'
               }}
             >Assign Mentor</button>
+            <button
+              onClick={resetEverything}
+              disabled={isResetting}
+              style={{
+                padding: '12px 28px',
+                background: isResetting 
+                  ? '#666666' 
+                  : 'linear-gradient(135deg, #dc2626, #b91c1c)',
+                border: 'none',
+                color: '#fff',
+                fontWeight: 700,
+                cursor: isResetting ? 'not-allowed' : 'pointer',
+                borderRadius: '50px',
+                transition: 'all 0.3s',
+                boxShadow: isResetting ? 'none' : '0 5px 15px rgba(220, 38, 38, 0.4)',
+                opacity: isResetting ? 0.6 : 1
+              }}
+            >{isResetting ? 'Resetting...' : 'Reset Everything'}</button>
             <button
               onClick={logout}
               style={{

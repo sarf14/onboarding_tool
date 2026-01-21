@@ -17,12 +17,23 @@ interface Mentee {
   activitiesCompleted: number;
 }
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+  sources?: any[];
+  contextUsed?: string[];
+}
+
 export default function MentorDashboard() {
   const router = useRouter();
   const { user, token, logout } = useAuthStore();
   const [mentees, setMentees] = useState<Mentee[]>([]);
   const [selectedMentee, setSelectedMentee] = useState<Mentee | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -33,18 +44,21 @@ export default function MentorDashboard() {
       router.push('/dashboard');
       return;
     }
+    // Start loading immediately
+    setIsLoading(true);
     fetchMentees();
   }, [token, user, router]);
 
   const fetchMentees = async () => {
     try {
       const response = await api.get('/mentor/mentees');
-      console.log('Mentor mentees response:', response.data);
       setMentees(response.data.mentees || []);
     } catch (error: any) {
-      console.error('Failed to fetch mentees:', error);
-      console.error('Error details:', error.response?.data);
-      alert('Failed to load mentees: ' + (error.response?.data?.error || error.message));
+      console.error('Failed to load mentees:', error);
+      // Don't show alert on initial load - just log error
+      if (mentees.length === 0) {
+        alert('Failed to load mentees: ' + (error.response?.data?.error || error.message));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -52,13 +66,30 @@ export default function MentorDashboard() {
 
   const fetchMenteeDetails = async (menteeId: string) => {
     try {
-      const response = await api.get(`/mentor/mentees/${menteeId}`);
+      // Fetch mentee details and chat history in parallel for faster loading
+      const [menteeResponse] = await Promise.all([
+        api.get(`/mentor/mentees/${menteeId}`),
+        fetchChatHistory(menteeId) // Start loading chat history immediately
+      ]);
       const mentee = mentees.find(m => m.id === menteeId);
       if (mentee) {
-        setSelectedMentee({ ...mentee, ...response.data.mentee });
+        setSelectedMentee({ ...mentee, ...menteeResponse.data.mentee });
       }
     } catch (error) {
-      console.error('Failed to fetch mentee details:', error);
+      // Silently handle errors
+    }
+  };
+
+  const fetchChatHistory = async (menteeId: string) => {
+    setIsLoadingChat(true);
+    try {
+      const response = await api.get(`/chat/history/${menteeId}`);
+      setChatHistory(response.data.messages || []);
+    } catch (error: any) {
+      // If table doesn't exist, show empty array
+      setChatHistory([]);
+    } finally {
+      setIsLoadingChat(false);
     }
   };
 
@@ -66,7 +97,7 @@ export default function MentorDashboard() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+        background: '#000000',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -91,7 +122,7 @@ export default function MentorDashboard() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+        background: '#000000',
       fontFamily: "'Inter', sans-serif",
       padding: '40px'
     }}>
@@ -102,26 +133,33 @@ export default function MentorDashboard() {
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '25px 40px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '25px',
+          background: '#12121A',
+          borderRadius: '12px',
           marginBottom: '40px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          border: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
-          <h1 style={{
-            fontSize: '36px',
-            fontWeight: 900,
-            background: 'linear-gradient(135deg, #ff006e, #8338ec, #3a86ff)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textTransform: 'uppercase',
-            letterSpacing: '3px'
-          }}>Mentor Dashboard</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{
+              fontSize: '24px',
+              fontWeight: 900,
+              color: '#FFFFFF',
+              textTransform: 'uppercase',
+              letterSpacing: '2px'
+            }}>AUTONEX</div>
+            <h1 style={{
+              fontSize: '24px',
+              fontWeight: 600,
+              color: '#A0A0A0',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>Mentor Dashboard</h1>
+          </div>
           <div style={{ display: 'flex', gap: '15px' }}>
             <button
               onClick={() => router.push('/dashboard')}
               style={{
                 padding: '12px 28px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
+                background: 'linear-gradient(135deg, #007BFF, #0056B3)',
                 border: 'none',
                 color: '#fff',
                 fontWeight: 700,
@@ -135,7 +173,7 @@ export default function MentorDashboard() {
               onClick={logout}
               style={{
                 padding: '12px 28px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
+                background: 'linear-gradient(135deg, #007BFF, #0056B3)',
                 border: 'none',
                 color: '#fff',
                 fontWeight: 700,
@@ -173,20 +211,23 @@ export default function MentorDashboard() {
                   <div
                     key={mentee.id}
                     onClick={() => {
-                      setSelectedMentee(mentee);
-                      fetchMenteeDetails(mentee.id);
+                      // Only fetch if different mentee selected
+                      if (selectedMentee?.id !== mentee.id) {
+                        setSelectedMentee(mentee);
+                        fetchMenteeDetails(mentee.id);
+                      }
                     }}
                     style={{
                       padding: '20px',
                       background: selectedMentee?.id === mentee.id ? '#f3f4f6' : '#fff',
-                      border: `2px solid ${selectedMentee?.id === mentee.id ? '#8338ec' : '#e5e7eb'}`,
+                      border: `2px solid ${selectedMentee?.id === mentee.id ? '#007BFF' : '#e5e7eb'}`,
                       borderRadius: '20px',
                       cursor: 'pointer',
                       transition: 'all 0.3s'
                     }}
                     onMouseEnter={(e) => {
                       if (selectedMentee?.id !== mentee.id) {
-                        e.currentTarget.style.borderColor = '#8338ec';
+                        e.currentTarget.style.borderColor = '#007BFF';
                         e.currentTarget.style.transform = 'translateX(5px)';
                       }
                     }}
@@ -201,7 +242,7 @@ export default function MentorDashboard() {
                       <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#333' }}>{mentee.name}</h3>
                       <span style={{
                         padding: '5px 12px',
-                        background: mentee.progress === 100 ? '#10b981' : mentee.progress > 0 ? '#3a86ff' : '#e5e7eb',
+                        background: mentee.progress === 100 ? '#10b981' : mentee.progress > 0 ? '#007BFF' : '#e5e7eb',
                         color: mentee.progress > 0 ? '#fff' : '#666',
                         borderRadius: '20px',
                         fontSize: '12px',
@@ -241,7 +282,7 @@ export default function MentorDashboard() {
               <div style={{ marginBottom: '30px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                   <span style={{ fontWeight: 600, color: '#333' }}>Overall Progress</span>
-                  <span style={{ fontWeight: 700, color: '#8338ec' }}>{selectedMentee.progress}%</span>
+                  <span style={{ fontWeight: 700, color: '#007BFF' }}>{selectedMentee.progress}%</span>
                 </div>
                 <div style={{
                   width: '100%',
@@ -253,7 +294,7 @@ export default function MentorDashboard() {
                   <div style={{
                     width: `${selectedMentee.progress}%`,
                     height: '100%',
-                    background: 'linear-gradient(90deg, #ff006e, #8338ec)',
+                    background: 'linear-gradient(90deg, #007BFF, #0056B3)',
                     transition: 'width 0.3s'
                   }}></div>
                 </div>
@@ -420,7 +461,7 @@ export default function MentorDashboard() {
                             }}
                             style={{
                               padding: '6px 12px',
-                              background: '#8338ec',
+                              background: '#007BFF',
                               color: '#fff',
                               border: 'none',
                               borderRadius: '10px',
@@ -438,6 +479,72 @@ export default function MentorDashboard() {
                 </div>
               ) : (
                 <p style={{ color: '#666', fontSize: '14px' }}>No quizzes completed yet.</p>
+              )}
+
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: '#333',
+                marginBottom: '15px',
+                marginTop: '30px'
+              }}>Chat History</h3>
+              {isLoadingChat ? (
+                <p style={{ color: '#666', fontSize: '14px' }}>Loading chat history...</p>
+              ) : chatHistory.length === 0 ? (
+                <p style={{ color: '#666', fontSize: '14px' }}>No chat history available.</p>
+              ) : (
+                <div style={{
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  padding: '10px',
+                  background: '#f9fafb',
+                  borderRadius: '15px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  {chatHistory.map((msg) => (
+                    <div
+                      key={msg.id}
+                      style={{
+                        padding: '12px 16px',
+                        background: msg.role === 'user' ? '#fff' : '#f3f4f6',
+                        border: `1px solid ${msg.role === 'user' ? '#e5e7eb' : '#d1d5db'}`,
+                        borderRadius: '12px',
+                        alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                        maxWidth: '80%',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: msg.role === 'user' ? '#007BFF' : '#666',
+                        marginBottom: '6px',
+                        textTransform: 'uppercase'
+                      }}>
+                        {msg.role === 'user' ? 'Mentee' : 'Assistant'}
+                      </div>
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#333',
+                        lineHeight: '1.5',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
+                      }}>
+                        {msg.content}
+                      </div>
+                      <div style={{
+                        fontSize: '11px',
+                        color: '#999',
+                        marginTop: '6px'
+                      }}>
+                        {new Date(msg.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}

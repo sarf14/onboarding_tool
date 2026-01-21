@@ -38,71 +38,100 @@ export default function DashboardPage() {
     }
     
     const loadDashboard = async () => {
+      // If user is already loaded, show content immediately and fetch data in background
+      if (user) {
+        setIsLoading(false);
+        // Fetch data in background without blocking UI
+        Promise.all([
+          fetchSections(),
+          fetchProgress()
+        ]).catch(() => {}); // Silently handle errors
+        return;
+      }
+      
       setIsLoading(true);
       try {
-        // Fetch user first - this is critical
-        await fetchUser();
-        // Then fetch sections and progress in parallel
+        // Fetch user and data in parallel for faster loading
         await Promise.all([
+          fetchUser().catch((fetchError: any) => {
+            // Only redirect if token is invalid
+            if (fetchError?.response?.status === 401) {
+              router.push('/login');
+              throw fetchError;
+            }
+          }),
           fetchSections(),
           fetchProgress()
         ]);
       } catch (error) {
-        console.error('Error loading dashboard:', error);
+        // Silently handle - already redirected if needed
       } finally {
         setIsLoading(false);
       }
     };
     
     loadDashboard();
-  }, [token, router]);
+  }, [token]); // Only depend on token - user will be set by login or fetchUser
 
   const fetchSections = async () => {
     try {
       const response = await api.get('/content/sections');
-      console.log('Sections response:', response.data);
       setSections(response.data.sections || []);
     } catch (error: any) {
-      console.error('Failed to fetch sections:', error);
-      console.error('Error details:', error.response?.data);
+      // Silently handle errors - sections will remain empty
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch sections:', error);
+      }
     }
   };
 
   const fetchProgress = async () => {
     try {
       const response = await api.get('/progress/me');
-      console.log('Progress response:', response.data);
       setSectionProgress(response.data.progress || []);
       setOverallProgress(response.data.overallProgress || 0);
       setCurrentSection(response.data.currentSection || 1);
     } catch (error: any) {
-      console.error('Failed to fetch progress:', error);
-      console.error('Error details:', error.response?.data);
+      // Silently handle errors - progress will remain empty
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch progress:', error);
+      }
     }
   };
 
-  // Show loading while fetching user or if no user yet
-  if (isLoading || !user) {
+  // Show loading only if we're actually loading and don't have user yet
+  if (isLoading && !user) {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+        background: '#001e49',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Inter', sans-serif",
+        position: 'relative'
       }}>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
             width: '64px',
             height: '64px',
-            border: '4px solid rgba(255, 255, 255, 0.3)',
-            borderTopColor: '#ffffff',
-            borderRadius: '50%',
+            border: '4px solid #141943',
+            borderTopColor: '#163791',
+            borderRadius: '0',
+            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
             animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
+            margin: '0 auto 20px',
+            borderRightColor: '#001a62',
+            borderBottomColor: '#001a62',
+            borderLeftColor: '#001a62'
           }}></div>
-          <p style={{ color: '#ffffff', fontSize: '20px', fontWeight: 700 }}>Loading your dashboard...</p>
+          <p style={{ 
+            color: '#efefef', 
+            fontSize: '20px', 
+            fontWeight: 700,
+            fontFamily: "'Orbitron', sans-serif",
+            letterSpacing: '2px'
+          }}>Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -126,9 +155,11 @@ export default function DashboardPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+      background: '#001e49',
       fontFamily: "'Inter', sans-serif",
-      color: '#ffffff'
+      color: '#efefef',
+      position: 'relative',
+      zIndex: 1
     }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px' }}>
         {/* Header */}
@@ -136,82 +167,125 @@ export default function DashboardPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '25px 40px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '25px',
+          padding: '30px 50px',
+          background: '#141943',
+          borderRadius: '0',
           marginBottom: '40px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
         }}>
+          {/* Angular corner accent */}
           <div style={{
-            fontSize: '36px',
-            fontWeight: 900,
-            background: 'linear-gradient(135deg, #ff006e, #8338ec, #3a86ff)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textTransform: 'uppercase',
-            letterSpacing: '3px'
-          }}>ONBOARDING</div>
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '20px solid transparent',
+            borderTop: '20px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '20px solid transparent',
+            borderBottom: '20px solid #001a62'
+          }}></div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {/* AUTONEX Logo */}
+            <img 
+              src="https://autonex-onboard.vercel.app/logo.png" 
+              alt="AUTONEX Logo" 
+              style={{
+                height: '50px',
+                width: 'auto',
+                filter: 'brightness(0) invert(1)',
+                display: 'block'
+              }}
+              onError={(e) => {
+                // Fallback to text if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const logoDiv = document.createElement('div');
+                  logoDiv.style.cssText = 'font-size: 42px; font-weight: 900; font-family: "Orbitron", sans-serif; color: #efefef; text-transform: uppercase; letter-spacing: 6px;';
+                  logoDiv.textContent = 'AUTONEX';
+                  parent.insertBefore(logoDiv, parent.firstChild);
+                }
+              }}
+            />
+            <div style={{
+              fontSize: '24px',
+              fontWeight: 600,
+              color: '#efefef',
+              textTransform: 'uppercase',
+              letterSpacing: '4px',
+              fontFamily: "'Orbitron', sans-serif",
+              opacity: 0.9
+            }}>ONBOARDING</div>
+          </div>
           <div style={{ display: 'flex', gap: '15px' }}>
-            <button style={{
-              padding: '12px 28px',
-              background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-              border: 'none',
-              color: '#fff',
-              fontWeight: 700,
-              cursor: 'pointer',
-              borderRadius: '50px',
-              transition: 'all 0.3s',
-              boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-3px)';
-              e.currentTarget.style.boxShadow = '0 10px 25px rgba(131, 56, 236, 0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 5px 15px rgba(131, 56, 236, 0.4)';
-            }}
-            >Dashboard</button>
-            <button style={{
-              padding: '12px 28px',
-              background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-              border: 'none',
-              color: '#fff',
-              fontWeight: 700,
-              cursor: 'pointer',
-              borderRadius: '50px',
-              transition: 'all 0.3s',
-              boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-3px)';
-              e.currentTarget.style.boxShadow = '0 10px 25px rgba(131, 56, 236, 0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 5px 15px rgba(131, 56, 236, 0.4)';
-            }}
-            >Progress</button>
+            <button 
+              onClick={() => router.push('/h2h')}
+              style={{
+                padding: '14px 32px',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
+                fontWeight: 700,
+                cursor: 'pointer',
+                borderRadius: '0',
+                transition: 'all 0.3s',
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                fontSize: '13px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >H2H Tool</button>
             <button 
               onClick={logout}
               style={{
-                padding: '12px 28px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                border: 'none',
-                color: '#fff',
+                padding: '14px 32px',
+                background: '#001a62',
+                border: '2px solid #163791',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: 'pointer',
-                borderRadius: '50px',
+                borderRadius: '0',
                 transition: 'all 0.3s',
-                boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
+                clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                fontSize: '13px'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = '0 10px 25px rgba(131, 56, 236, 0.6)';
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 5px 15px rgba(131, 56, 236, 0.4)';
               }}
             >Logout</button>
           </div>
@@ -233,46 +307,75 @@ export default function DashboardPage() {
             <div
               key={idx}
               style={{
-                background: 'rgba(255, 255, 255, 0.95)',
+                background: '#141943',
                 padding: '35px',
-                borderRadius: '25px',
+                borderRadius: '0',
                 textAlign: 'center',
-                boxShadow: '0 15px 40px rgba(0, 0, 0, 0.2)',
+                boxShadow: '0 5px 25px rgba(0, 0, 0, 0.3)',
                 transition: 'all 0.4s',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                border: '3px solid #163791',
+                borderTop: '5px solid #163791',
+                clipPath: 'polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px))'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-15px) rotate(2deg)';
-                e.currentTarget.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.3)';
+                e.currentTarget.style.transform = 'translateY(-8px)';
+                e.currentTarget.style.boxShadow = '0 10px 35px rgba(0, 0, 0, 0.5)';
+                e.currentTarget.style.borderColor = '#001a62';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) rotate(0deg)';
-                e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.2)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 5px 25px rgba(0, 0, 0, 0.3)';
+                e.currentTarget.style.borderColor = '#163791';
               }}
             >
+              {/* Angular corner accent */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '0',
+                height: '0',
+                borderLeft: '15px solid transparent',
+                borderTop: '15px solid #001a62'
+              }}></div>
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: '0',
+                height: '0',
+                borderRight: '15px solid transparent',
+                borderBottom: '15px solid #001a62'
+              }}></div>
+              
+              {/* Glowing top border */}
               <div style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 width: '100%',
                 height: '5px',
-                background: 'linear-gradient(90deg, #ff006e, #8338ec, #3a86ff)'
+                background: '#163791'
               }}></div>
+              
               <div style={{
-                fontSize: '56px',
+                fontSize: '64px',
                 fontWeight: 900,
-                background: 'linear-gradient(135deg, #ff006e, #8338ec, #3a86ff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                marginBottom: '10px'
+                fontFamily: "'Orbitron', sans-serif",
+                color: '#efefef',
+                marginBottom: '10px',
+                letterSpacing: '2px'
               }}>{stat.number}</div>
               <div style={{
-                color: '#333',
-                fontSize: '16px',
+                color: '#efefef',
+                fontSize: '14px',
                 fontWeight: 600,
                 textTransform: 'uppercase',
-                letterSpacing: '1px'
+                letterSpacing: '2px',
+                fontFamily: "'Orbitron', sans-serif",
+                opacity: 0.8
               }}>{stat.label}</div>
             </div>
           ))}
@@ -286,27 +389,51 @@ export default function DashboardPage() {
         }}>
           {/* Welcome Card */}
           <div style={{
-            background: 'rgba(255, 255, 255, 0.95)',
+            background: '#141943',
             padding: '50px',
-            borderRadius: '30px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+            borderRadius: '0',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            border: '3px solid #163791',
+            borderLeft: '8px solid #163791',
+            position: 'relative',
+            clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
           }}>
+            {/* Angular corner accents */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '0',
+              height: '0',
+              borderLeft: '20px solid transparent',
+              borderTop: '20px solid #001a62'
+            }}></div>
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '0',
+              height: '0',
+              borderRight: '20px solid transparent',
+              borderBottom: '20px solid #001a62'
+            }}></div>
+            
             <h1 style={{
               fontSize: '48px',
               fontWeight: 900,
+              fontFamily: "'Orbitron', sans-serif",
               marginBottom: '25px',
-              background: 'linear-gradient(135deg, #ff006e, #8338ec, #3a86ff)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: '#efefef',
               textTransform: 'uppercase',
-              letterSpacing: '2px'
+              letterSpacing: '4px'
             }}>Welcome Back!</h1>
             <p style={{
-              color: '#333',
-              fontSize: '20px',
+              color: '#efefef',
+              fontSize: '18px',
               marginBottom: '30px',
               lineHeight: 1.8,
-              fontWeight: 500
+              fontWeight: 400,
+              opacity: 0.9
             }}>
               Continue your learning journey at your own pace. Complete sections when you're ready and take quizzes to test your knowledge.
             </p>
@@ -314,25 +441,30 @@ export default function DashboardPage() {
               <button
                 onClick={() => router.push('/admin')}
                 style={{
-                  padding: '15px 35px',
-                  background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                  border: 'none',
-                  color: '#fff',
+                  padding: '14px 32px',
+                  background: '#163791',
+                  border: '2px solid #001a62',
+                  color: '#efefef',
                   fontWeight: 700,
-                  fontSize: '18px',
+                  fontSize: '14px',
                   cursor: 'pointer',
-                  borderRadius: '50px',
+                  borderRadius: '0',
                   marginRight: '15px',
                   transition: 'all 0.3s',
-                  boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
+                  clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                  fontFamily: "'Orbitron', sans-serif",
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = '0 10px 25px rgba(131, 56, 236, 0.6)';
+                  e.currentTarget.style.background = '#001a62';
+                  e.currentTarget.style.borderColor = '#163791';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
                 }}
                 onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#163791';
+                  e.currentTarget.style.borderColor = '#001a62';
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 5px 15px rgba(131, 56, 236, 0.4)';
                 }}
               >Admin Panel</button>
             )}
@@ -340,61 +472,72 @@ export default function DashboardPage() {
               <button
                 onClick={() => router.push('/mentor')}
                 style={{
-                  padding: '15px 35px',
-                  background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                  border: 'none',
-                  color: '#fff',
+                  padding: '14px 32px',
+                  background: '#163791',
+                  border: '2px solid #001a62',
+                  color: '#efefef',
                   fontWeight: 700,
-                  fontSize: '18px',
+                  fontSize: '14px',
                   cursor: 'pointer',
-                  borderRadius: '50px',
+                  borderRadius: '0',
                   marginRight: '15px',
                   transition: 'all 0.3s',
-                  boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
+                  clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                  fontFamily: "'Orbitron', sans-serif",
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = '0 10px 25px rgba(131, 56, 236, 0.6)';
+                  e.currentTarget.style.background = '#001a62';
+                  e.currentTarget.style.borderColor = '#163791';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
                 }}
                 onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#163791';
+                  e.currentTarget.style.borderColor = '#001a62';
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 5px 15px rgba(131, 56, 236, 0.4)';
                 }}
               >Mentor Dashboard</button>
             )}
-            <button 
+              <button 
               onClick={() => router.push(`/section/${currentSectionNum}`)}
               style={{
                 padding: '18px 45px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                border: 'none',
-                color: '#fff',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
                 fontWeight: 900,
-                fontSize: '18px',
+                fontSize: '16px',
+                fontFamily: "'Orbitron', sans-serif",
                 textTransform: 'uppercase',
                 cursor: 'pointer',
-                borderRadius: '50px',
-                boxShadow: '0 10px 30px rgba(131, 56, 236, 0.5)',
+                borderRadius: '0',
                 transition: 'all 0.3s',
-                letterSpacing: '1px'
+                letterSpacing: '2px',
+                clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                e.currentTarget.style.boxShadow = '0 15px 40px rgba(131, 56, 236, 0.7)';
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(-3px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = '0 10px 30px rgba(131, 56, 236, 0.5)';
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >Continue Learning →</button>
             
             <h2 style={{
-              color: '#8338ec',
+              color: '#efefef',
               marginTop: '50px',
               marginBottom: '25px',
-              fontSize: '28px',
+              fontSize: '32px',
               fontWeight: 900,
-              textTransform: 'uppercase'
+              fontFamily: "'Orbitron', sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '4px',
+              textShadow: '0 0 20px rgba(22, 55, 145, 0.8)'
             }}>Sections</h2>
             <div style={{
               display: 'flex',
@@ -413,15 +556,21 @@ export default function DashboardPage() {
                 const quizScore = progress?.quizScore;
                 const passedQuiz = progress?.passedQuiz || (quizScore !== undefined && quizScore >= 80);
                 
-                let bgGradient = 'linear-gradient(135deg, #e5e7eb, #d1d5db)';
-                let borderColor = '#e5e7eb';
+                let bgColor = '#141943';
+                let borderColor = '#163791';
+                let accentColor = '#163791';
+                let textColor = '#efefef';
                 
                 if (status === 'COMPLETED') {
-                  bgGradient = 'linear-gradient(135deg, #3a86ff, #8338ec)';
-                  borderColor = '#3a86ff';
+                  bgColor = '#001e49';
+                  borderColor = '#001a62';
+                  accentColor = '#001a62';
+                  textColor = '#efefef';
                 } else if (status === 'IN_PROGRESS' || isCurrentSection) {
-                  bgGradient = 'linear-gradient(135deg, #ff006e, #8338ec)';
-                  borderColor = '#ff006e';
+                  bgColor = '#141943';
+                  borderColor = '#163791';
+                  accentColor = '#163791';
+                  textColor = '#efefef';
                 }
 
                 return (
@@ -429,26 +578,54 @@ export default function DashboardPage() {
                     key={section.id}
                     onClick={() => router.push(`/section/${sectionNum}`)}
                     style={{
-                      background: bgGradient,
+                      background: bgColor,
                       border: `3px solid ${borderColor}`,
-                      color: '#fff',
+                      borderLeft: `8px solid ${borderColor}`,
+                      color: textColor,
                       padding: '25px 30px',
-                      borderRadius: '20px',
+                      borderRadius: '0',
                       cursor: 'pointer',
                       transition: 'all 0.4s',
                       textAlign: 'left',
-                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-                      transform: isCurrentSection ? 'scale(1.02)' : 'scale(1)'
+                      boxShadow: isCurrentSection 
+                        ? '0 8px 30px rgba(22, 55, 145, 0.25)' 
+                        : '0 5px 20px rgba(22, 55, 145, 0.12)',
+                      position: 'relative',
+                      clipPath: 'polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px))',
+                      transform: isCurrentSection ? 'scale(1.01)' : 'scale(1)'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateX(10px) scale(1.02)';
-                      e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.3)';
+                      e.currentTarget.style.transform = 'translateX(8px) scale(1.01)';
+                      e.currentTarget.style.boxShadow = '0 10px 35px rgba(22, 55, 145, 0.3)';
+                      e.currentTarget.style.borderColor = accentColor;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = isCurrentSection ? 'translateX(0) scale(1.02)' : 'translateX(0) scale(1)';
-                      e.currentTarget.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.2)';
+                      e.currentTarget.style.transform = isCurrentSection ? 'translateX(0) scale(1.01)' : 'translateX(0) scale(1)';
+                      e.currentTarget.style.boxShadow = isCurrentSection 
+                        ? '0 8px 30px rgba(22, 55, 145, 0.25)' 
+                        : '0 5px 20px rgba(22, 55, 145, 0.12)';
+                      e.currentTarget.style.borderColor = borderColor;
                     }}
                   >
+                    {/* Angular corner accents */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: '0',
+                      height: '0',
+                      borderLeft: '15px solid transparent',
+                      borderTop: `15px solid ${accentColor}`
+                    }}></div>
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      width: '0',
+                      height: '0',
+                      borderRight: '15px solid transparent',
+                      borderBottom: `15px solid ${accentColor}`
+                    }}></div>
                     <div style={{
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -458,7 +635,10 @@ export default function DashboardPage() {
                       <div style={{
                         fontSize: '20px',
                         fontWeight: 900,
-                        textTransform: 'uppercase'
+                        fontFamily: "'Orbitron', sans-serif",
+                        textTransform: 'uppercase',
+                        letterSpacing: '2px',
+                        color: textColor
                       }}>Section {sectionNum}: {section.title}</div>
                       {status === 'COMPLETED' && (
                         <div style={{
@@ -474,24 +654,31 @@ export default function DashboardPage() {
                     </div>
                     <div style={{
                       fontSize: '14px',
-                      opacity: 0.9,
-                      marginBottom: '8px'
+                      opacity: 0.85,
+                      marginBottom: '8px',
+                      color: '#efefef'
                     }}>{section.description}</div>
                     <div style={{
                       fontSize: '12px',
-                      opacity: 0.8,
-                      marginBottom: '5px'
+                      opacity: 0.7,
+                      marginBottom: '5px',
+                      color: '#efefef',
+                      fontFamily: "'Orbitron', sans-serif",
+                      letterSpacing: '1px'
                     }}>Estimated: {section.estimatedDuration} {section.hasQuiz && '• Includes Quiz'}</div>
                     {status === 'COMPLETED' && progress?.quizScore !== undefined && progress?.quizScore >= 80 && (
                       <div style={{
                         fontSize: '13px',
                         fontWeight: 700,
-                        color: '#10b981',
+                        color: textColor,
                         marginTop: '8px',
-                        padding: '5px 10px',
-                        background: 'rgba(16, 185, 129, 0.1)',
-                        borderRadius: '10px',
-                        display: 'inline-block'
+                        padding: '6px 12px',
+                        background: status === 'COMPLETED' ? '#001e49' : '#efefef',
+                        border: `2px solid ${accentColor}`,
+                        borderRadius: '0',
+                        display: 'inline-block',
+                        fontFamily: "'Orbitron', sans-serif",
+                        letterSpacing: '1px'
                       }}>
                         ✓ Quiz Passed: {progress.quizScore}%
                       </div>
@@ -499,66 +686,198 @@ export default function DashboardPage() {
                   </button>
                 );
               })}
+              
+              {/* Final Quiz Card - Show when all 4 sections are completed */}
+              {completedSections === 4 && (
+                <button
+                  onClick={() => router.push('/section/final/quiz')}
+                  style={{
+                    background: '#141943',
+                    border: '3px solid #163791',
+                    borderLeft: '8px solid #163791',
+                    color: '#efefef',
+                    padding: '30px',
+                    borderRadius: '0',
+                    cursor: 'pointer',
+                    transition: 'all 0.4s',
+                    textAlign: 'left',
+                    boxShadow: '0 10px 40px rgba(22, 55, 145, 0.3)',
+                    marginTop: '20px',
+                    width: '100%',
+                    position: 'relative',
+                    clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-5px)';
+                    e.currentTarget.style.boxShadow = '0 15px 50px rgba(22, 55, 145, 0.4)';
+                    e.currentTarget.style.borderColor = '#001a62';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 10px 40px rgba(22, 55, 145, 0.3)';
+                    e.currentTarget.style.borderColor = '#163791';
+                  }}
+                >
+                  {/* Angular corner accents */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '0',
+                    height: '0',
+                    borderLeft: '20px solid transparent',
+                    borderTop: '20px solid #163791'
+                  }}></div>
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    width: '0',
+                    height: '0',
+                    borderRight: '20px solid transparent',
+                    borderBottom: '20px solid #163791'
+                  }}></div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '15px'
+                  }}>
+                    <div style={{
+                      fontSize: '26px',
+                      fontWeight: 900,
+                      fontFamily: "'Orbitron', sans-serif",
+                      textTransform: 'uppercase',
+                      letterSpacing: '3px',
+                      color: '#efefef'
+                    }}>🎯 Final Comprehensive Assessment</div>
+                    <div style={{
+                      fontSize: '32px',
+                      color: '#efefef'
+                    }}>→</div>
+                  </div>
+                  <div style={{
+                    fontSize: '16px',
+                    marginBottom: '10px',
+                    lineHeight: 1.6,
+                    color: '#efefef'
+                  }}>
+                    Test your knowledge across all sections with 21 comprehensive questions covering error categorization, task status, trajectory status, and H2H evaluation.
+                  </div>
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    marginTop: '15px',
+                    padding: '10px 15px',
+                    background: '#001e49',
+                    border: '2px solid #163791',
+                    borderRadius: '0',
+                    display: 'inline-block',
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '1px',
+                    color: '#efefef'
+                  }}>
+                    ✓ All Sections Completed • Ready to Take Final Quiz
+                  </div>
+                </button>
+              )}
             </div>
           </div>
           
           {/* Quick Stats Card */}
           <div style={{
-            background: 'rgba(255, 255, 255, 0.95)',
+            background: '#141943',
             padding: '50px',
-            borderRadius: '30px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+            borderRadius: '0',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            border: '3px solid #163791',
+            borderLeft: '8px solid #163791',
+            position: 'relative',
+            clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
           }}>
+            {/* Angular corner accents */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '0',
+              height: '0',
+              borderLeft: '20px solid transparent',
+              borderTop: '20px solid #001a62'
+            }}></div>
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '0',
+              height: '0',
+              borderRight: '20px solid transparent',
+              borderBottom: '20px solid #001a62'
+            }}></div>
+            
             <h2 style={{
-              color: '#ff006e',
+              color: '#efefef',
               marginBottom: '25px',
-              fontSize: '28px',
+              fontSize: '32px',
               fontWeight: 900,
-              textTransform: 'uppercase'
+              fontFamily: "'Orbitron', sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '4px'
             }}>Quick Stats</h2>
             <div style={{ marginBottom: '30px' }}>
               <div style={{
-                color: '#333',
+                color: '#efefef',
                 marginBottom: '15px',
                 fontWeight: 600,
-                fontSize: '16px'
+                fontSize: '14px',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                opacity: 0.9
               }}>Activities Completed</div>
               <div style={{
-                background: '#f0f0f0',
+                background: '#141943',
                 height: '35px',
-                borderRadius: '50px',
+                borderRadius: '0',
                 overflow: 'hidden',
-                boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.1)'
+                border: '2px solid #163791',
+                position: 'relative'
               }}>
                 <div style={{
-                  background: 'linear-gradient(90deg, #ff006e, #8338ec)',
+                  background: '#163791',
                   height: '100%',
                   width: `${overallProgress}%`,
-                  borderRadius: '50px',
-                  transition: 'width 0.3s'
+                  transition: 'width 0.3s',
+                  position: 'relative'
                 }}></div>
               </div>
             </div>
             <div style={{ marginBottom: '30px' }}>
               <div style={{
-                color: '#333',
+                color: '#efefef',
                 marginBottom: '15px',
                 fontWeight: 600,
-                fontSize: '16px'
+                fontSize: '14px',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                opacity: 0.9
               }}>Quizzes Passed</div>
               <div style={{
-                background: '#f0f0f0',
+                background: '#141943',
                 height: '35px',
-                borderRadius: '50px',
+                borderRadius: '0',
                 overflow: 'hidden',
-                boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.1)'
+                border: '2px solid #163791',
+                position: 'relative'
               }}>
                 <div style={{
-                  background: 'linear-gradient(90deg, #8338ec, #3a86ff)',
+                  background: '#163791',
                   height: '100%',
                   width: `${(completedSections / totalSections) * 100}%`,
-                  borderRadius: '50px',
-                  transition: 'width 0.3s'
+                  transition: 'width 0.3s',
+                  position: 'relative'
                 }}></div>
               </div>
             </div>

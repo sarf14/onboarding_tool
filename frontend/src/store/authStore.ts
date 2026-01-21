@@ -65,15 +65,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchUser: async () => {
     try {
-      console.log('Fetching user...');
       const response = await api.get('/auth/me');
-      console.log('User fetched:', response.data.user);
       set({ user: response.data.user });
     } catch (error: any) {
-      console.error('Failed to fetch user:', error);
-      console.error('Error details:', error.response?.data);
+      // Clear invalid token
       set({ user: null, token: null });
       localStorage.removeItem('token');
+      // Re-throw so calling code can handle it
       throw error;
     }
   },
