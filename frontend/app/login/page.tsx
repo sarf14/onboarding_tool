@@ -46,47 +46,6 @@ export default function LoginPage() {
       <div style={{ maxWidth: '600px', width: '100%', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '15px',
-            marginBottom: '30px'
-          }}>
-            {/* AUTONEX Logo */}
-            <img 
-              src="https://autonex-onboard.vercel.app/logo.png" 
-              alt="AUTONEX Logo" 
-              style={{
-                height: '60px',
-                width: 'auto',
-                filter: 'brightness(0) invert(1)',
-                display: 'block'
-              }}
-              onError={(e) => {
-                // Fallback to text if image fails to load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent) {
-                  const logoDiv = document.createElement('div');
-                  logoDiv.style.cssText = 'font-size: 48px; font-weight: 900; font-family: "Orbitron", sans-serif; color: #efefef; text-transform: uppercase; letter-spacing: 6px;';
-                  logoDiv.textContent = 'AUTONEX';
-                  parent.insertBefore(logoDiv, parent.firstChild);
-                }
-              }}
-            />
-          </div>
-          <h1 style={{
-            fontSize: '42px',
-            fontWeight: 900,
-            fontFamily: "'Orbitron', sans-serif",
-            color: '#efefef',
-            textTransform: 'uppercase',
-            letterSpacing: '6px',
-            marginBottom: '15px',
-            textShadow: '0 0 20px rgba(22, 55, 145, 0.8)'
-          }}>AUTONEX</h1>
           <p style={{ 
             color: '#efefef', 
             fontSize: '20px', 
