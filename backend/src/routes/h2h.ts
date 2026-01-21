@@ -69,26 +69,38 @@ router.post('/format', async (req: AuthRequest, res) => {
     let template = '';
 
     if (strength === 'neutral') {
+      const parts: string[] = [];
+      
+      if (key_req_) {
+        parts.push(`In terms of key requirements, ${key_req_}`);
+      }
+      if (supp_info_) {
+        parts.push(`In terms of supplementary information, ${supp_info_}`);
+      }
+      if (extra_) {
+        const prefix = type_ === 'Process Performance' ? 'In terms of process' : 'In terms of formatting';
+        parts.push(`${prefix}, ${extra_}`);
+      }
+      
       template = 
-        `Both models ${key_req_ || 'fulfilled the key requirements successfully'}.\n` +
-        `Both models ${supp_info_ || 'provided comparable supplementary information'}.\n` +
-        `${extra_ ? `Both models also ${extra_}.\n` : ''}` +
+        `${parts.join('. ')}.\n` +
         `Therefore, there is no clear advantage between Model A and Model B.\n\n` +
-        `Rewrite this text with improved structure, grammar, and vocabulary. Keep it neutral, factual, and concise. Use professional language and better word choices.\n\n` +
+        `Polish this text for grammar and clarity only. Keep it neutral, factual, and concise.\n\n` +
         ` Balanced tone\n Neutral phrasing\n Human-sounding clarity\n Zero format drift`;
     } else if (strength === 'unsure') {
-      // Build the reason for uncertainty using all available fields
+      // Build the reason for uncertainty using all available fields with appropriate prefixes
       let uncertaintyReason = '';
       const reasons: string[] = [];
       
       if (key_req_) {
-        reasons.push(key_req_);
+        reasons.push(`in terms of key requirements, ${key_req_}`);
       }
       if (supp_info_) {
-        reasons.push(supp_info_);
+        reasons.push(`in terms of supplementary information, ${supp_info_}`);
       }
       if (extra_) {
-        reasons.push(extra_);
+        const prefix = type_ === 'Process Performance' ? 'in terms of process' : 'in terms of formatting';
+        reasons.push(`${prefix}, ${extra_}`);
       }
       
       if (reasons.length > 0) {
@@ -107,42 +119,44 @@ router.post('/format', async (req: AuthRequest, res) => {
       template = 
         `The comparison could not be completed due to ${uncertaintyReason}.\n` +
         `Therefore, it cannot be determined whether Model A or Model B performed better.\n\n` +
-        `Rewrite this text completely. Fix ALL grammar errors, typos, missing words, and awkward phrasing. Use proper conjunctions and sentence structure. Make it professional, clear, and grammatically perfect.\n\n` +
+        `Polish this text for grammar and clarity only. Keep it factual and formal.\n\n` +
         ` Neutral tone\n Proper formatting\n Human-sounding clarity\n Clear closing statement`;
     } else if (type_ === 'Process Performance') {
-      let supp_line = '';
-      if (both_supplementary) {
-        supp_line = `Both models ${supp_info_ || 'handled supplementary information effectively'}.`;
-      } else {
-        supp_line = 
-          `Model ${model} ${supp_info_ || 'completed the key steps correctly'}, ` +
-          `but Model ${other_model} did not.`;
+      const parts: string[] = [];
+      
+      if (key_req_) {
+        parts.push(`In terms of key requirements, ${key_req_}`);
+      }
+      if (supp_info_) {
+        parts.push(`In terms of supplementary information, ${supp_info_}`);
+      }
+      if (extra_) {
+        parts.push(`In terms of process, ${extra_}`);
       }
 
       template = 
-        `Both models ${key_req_ || 'attempted to meet the process requirements'}.\n` +
-        `${supp_line}\n` +
-        `${extra_ ? `Model ${model} made fewer errors while Model ${other_model} made ${extra_} mistakes.\n` : ''}` +
+        `${parts.join('. ')}.\n` +
         `Therefore, Model ${model} is ${strength} better than Model ${other_model} in process performance.\n\n` +
-        `Rewrite this text with improved structure, grammar, and vocabulary. Enhance word choice and sentence flow while maintaining the comparison structure.\n\n` +
+        `Polish this text for grammar and clarity only. Correct grammar errors, restructure sentences appropriately, and improve vocabulary. Do not change structure or format.\n\n` +
         ` Consistent structure\n Perfect grammar\n Human-sounding clarity\n Zero format drift`;
     } else {
       // Outcome Performance
-      let supp_line = '';
-      if (both_supplementary) {
-        supp_line = `Both models ${supp_info_ || 'provided sufficient supplementary information, such as the company URL'}.`;
-      } else {
-        supp_line = 
-          `Model ${model} ${supp_info_ || 'included additional useful results'}, ` +
-          `but Model ${other_model} did not.`;
+      const parts: string[] = [];
+      
+      if (key_req_) {
+        parts.push(`In terms of key requirements, ${key_req_}`);
+      }
+      if (supp_info_) {
+        parts.push(`In terms of supplementary information, ${supp_info_}`);
+      }
+      if (extra_) {
+        parts.push(`In terms of formatting, ${extra_}`);
       }
 
       template = 
-        `In terms of key results, both models ${key_req_ || 'produced valid and complete outputs'}.\n` +
-        `${supp_line}\n` +
-        `${extra_ ? `Model ${model} avoided ${extra_} mistakes that Model ${other_model} made.\n` : ''}` +
+        `${parts.join('. ')}.\n` +
         `Therefore, Model ${model} is ${strength} better than Model ${other_model} in outcome performance.\n\n` +
-        `Rewrite this text with improved structure, grammar, and vocabulary. Enhance word choice and sentence flow while maintaining the comparison structure.\n\n` +
+        `Polish this text for grammar and clarity only. Correct grammar errors, restructure sentences appropriately, and improve vocabulary. Do not change structure or format.\n\n` +
         ` Consistent structure\n Perfect grammar\n Human-sounding clarity\n Zero format drift`;
     }
 
@@ -165,15 +179,15 @@ router.post('/format', async (req: AuthRequest, res) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a professional writing assistant specializing in technical and analytical writing. You must fix ALL grammar errors, improve sentence structure, enhance vocabulary, and ensure proper word choice. Rewrite sentences completely if needed to make them grammatically correct and professional.' 
+            content: 'You are a professional writing assistant.' 
           },
           { 
             role: 'user', 
-            content: `Rewrite this text completely. Fix ALL grammar errors, typos, and awkward phrasing. Improve sentence structure, use proper conjunctions (and, but, because, etc.), fix missing words, correct spelling mistakes, and enhance vocabulary. Make it professional, clear, and grammatically perfect. Do not copy-paste - rewrite it properly:\n\n${template}` 
+            content: `Polish this text for grammar and clarity only. Correct grammar errors, restructure sentences appropriately, and improve vocabulary:\n\n${template}` 
           }
         ],
-        temperature: 0.3,
-        max_tokens: 800,
+        temperature: 0.4,
+        max_tokens: 500,
       };
 
       const response = await fetch(deepseekUrl, {

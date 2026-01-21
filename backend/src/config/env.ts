@@ -15,6 +15,11 @@ export const config = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     anonKey: process.env.SUPABASE_ANON_KEY || '',
   },
+  llm: {
+    apiKey: process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY || '',
+    apiUrl: process.env.LLM_API_URL || 'https://api.deepseek.com/chat/completions',
+    model: process.env.LLM_MODEL || 'deepseek-chat',
+  },
 };
 
 // Validate required environment variables

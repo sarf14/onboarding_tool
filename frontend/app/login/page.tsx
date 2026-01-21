@@ -34,78 +34,124 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+      background: '#001e49',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '40px',
-      fontFamily: "'Inter', sans-serif"
+      fontFamily: "'Inter', sans-serif",
+      position: 'relative',
+      zIndex: 1
     }}>
-      <div style={{ maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
+      <div style={{ maxWidth: '600px', width: '100%', margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
           <div style={{
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '120px',
-            height: '120px',
-            background: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: '25px',
-            marginBottom: '30px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+            gap: '15px',
+            marginBottom: '30px'
           }}>
-            <span style={{
-              fontSize: '48px',
-              fontWeight: 900,
-              background: 'linear-gradient(135deg, #ff006e, #8338ec, #3a86ff)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textTransform: 'uppercase',
-              letterSpacing: '3px'
-            }}>A</span>
+            {/* AUTONEX Logo */}
+            <img 
+              src="https://autonex-onboard.vercel.app/logo.png" 
+              alt="AUTONEX Logo" 
+              style={{
+                height: '60px',
+                width: 'auto',
+                filter: 'brightness(0) invert(1)',
+                display: 'block'
+              }}
+              onError={(e) => {
+                // Fallback to text if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const logoDiv = document.createElement('div');
+                  logoDiv.style.cssText = 'font-size: 48px; font-weight: 900; font-family: "Orbitron", sans-serif; color: #efefef; text-transform: uppercase; letter-spacing: 6px;';
+                  logoDiv.textContent = 'AUTONEX';
+                  parent.insertBefore(logoDiv, parent.firstChild);
+                }
+              }}
+            />
           </div>
           <h1 style={{
-            fontSize: '36px',
+            fontSize: '42px',
             fontWeight: 900,
-            background: 'linear-gradient(135deg, #ff006e, #8338ec, #3a86ff)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            fontFamily: "'Orbitron', sans-serif",
+            color: '#efefef',
             textTransform: 'uppercase',
+            letterSpacing: '6px',
+            marginBottom: '15px',
+            textShadow: '0 0 20px rgba(22, 55, 145, 0.8)'
+          }}>AUTONEX</h1>
+          <p style={{ 
+            color: '#efefef', 
+            fontSize: '20px', 
+            fontWeight: 600,
+            fontFamily: "'Orbitron', sans-serif",
             letterSpacing: '3px',
-            marginBottom: '10px'
-          }}>Autonex</h1>
-          <p style={{ color: '#ffffff', fontSize: '18px', fontWeight: 600 }}>Onboarding Platform</p>
+            opacity: 0.9
+          }}>ONBOARDING PLATFORM</p>
         </div>
 
         {/* Login Form Card */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
+          background: '#141943',
           padding: '50px',
-          borderRadius: '30px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-          transition: 'all 0.4s'
+          borderRadius: '0',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          transition: 'all 0.4s',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-15px) rotate(2deg)';
-          e.currentTarget.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.3)';
+          e.currentTarget.style.transform = 'translateY(-5px)';
+          e.currentTarget.style.boxShadow = '0 15px 50px rgba(22, 55, 145, 0.4)';
+          e.currentTarget.style.borderColor = '#001a62';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0) rotate(0deg)';
-          e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.3)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.3)';
+          e.currentTarget.style.borderColor = '#163791';
         }}
         >
+          {/* Angular corner accents */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '20px solid transparent',
+            borderTop: '20px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '20px solid transparent',
+            borderBottom: '20px solid #001a62'
+          }}></div>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
             {error && (
               <div style={{
-                background: 'rgba(239, 68, 68, 0.2)',
+                background: '#001e49',
                 border: '2px solid #ef4444',
-                color: '#ffffff',
+                color: '#efefef',
                 padding: '15px 20px',
-                borderRadius: '25px',
+                borderRadius: '0',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px'
+                gap: '10px',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px'
               }}>
                 <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -116,11 +162,12 @@ export default function LoginPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label htmlFor="email" style={{
-                color: '#333',
-                fontSize: '16px',
+                color: '#efefef',
+                fontSize: '14px',
                 fontWeight: 600,
                 textTransform: 'uppercase',
-                letterSpacing: '1px'
+                letterSpacing: '2px',
+                fontFamily: "'Orbitron', sans-serif"
               }}>Email Address</label>
               <input
                 id="email"
@@ -131,20 +178,23 @@ export default function LoginPage() {
                 style={{
                   width: '100%',
                   padding: '15px 20px',
-                  background: '#ffffff',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '25px',
-                  color: '#333',
+                  background: '#001e49',
+                  border: '2px solid #163791',
+                  borderRadius: '0',
+                  color: '#efefef',
                   fontSize: '16px',
                   fontWeight: 500,
                   outline: 'none',
-                  transition: 'all 0.3s'
+                  transition: 'all 0.3s',
+                  fontFamily: "'Inter', sans-serif"
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#8338ec';
+                  e.currentTarget.style.borderColor = '#001a62';
+                  e.currentTarget.style.boxShadow = '0 0 15px rgba(22, 55, 145, 0.5)';
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.borderColor = '#163791';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
                 placeholder="Enter your email"
               />
@@ -152,11 +202,12 @@ export default function LoginPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label htmlFor="password" style={{
-                color: '#333',
-                fontSize: '16px',
+                color: '#efefef',
+                fontSize: '14px',
                 fontWeight: 600,
                 textTransform: 'uppercase',
-                letterSpacing: '1px'
+                letterSpacing: '2px',
+                fontFamily: "'Orbitron', sans-serif"
               }}>Password</label>
               <input
                 id="password"
@@ -167,20 +218,23 @@ export default function LoginPage() {
                 style={{
                   width: '100%',
                   padding: '15px 20px',
-                  background: '#ffffff',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '25px',
-                  color: '#333',
+                  background: '#001e49',
+                  border: '2px solid #163791',
+                  borderRadius: '0',
+                  color: '#efefef',
                   fontSize: '16px',
                   fontWeight: 500,
                   outline: 'none',
-                  transition: 'all 0.3s'
+                  transition: 'all 0.3s',
+                  fontFamily: "'Inter', sans-serif"
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#8338ec';
+                  e.currentTarget.style.borderColor = '#001a62';
+                  e.currentTarget.style.boxShadow = '0 0 15px rgba(22, 55, 145, 0.5)';
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.borderColor = '#163791';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
                 placeholder="Enter your password"
               />
@@ -191,31 +245,37 @@ export default function LoginPage() {
               disabled={isLoading}
               style={{
                 padding: '18px 45px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                border: 'none',
-                color: '#fff',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
                 fontWeight: 900,
                 fontSize: '18px',
+                fontFamily: "'Orbitron', sans-serif",
                 textTransform: 'uppercase',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
-                borderRadius: '50px',
-                boxShadow: '0 10px 30px rgba(131, 56, 236, 0.5)',
+                borderRadius: '0',
+                boxShadow: '0 10px 30px rgba(22, 55, 145, 0.3)',
                 transition: 'all 0.3s',
-                letterSpacing: '1px',
-                opacity: isLoading ? 0.5 : 1
+                letterSpacing: '2px',
+                opacity: isLoading ? 0.5 : 1,
+                clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
               }}
               onMouseEnter={(e) => {
                 if (!isLoading) {
-                  e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(131, 56, 236, 0.7)';
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(22, 55, 145, 0.5)';
+                  e.currentTarget.style.background = '#001a62';
+                  e.currentTarget.style.borderColor = '#163791';
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = '0 10px 30px rgba(131, 56, 236, 0.5)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 10px 30px rgba(22, 55, 145, 0.3)';
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
               }}
             >
-              {isLoading ? 'Signing in...' : 'Sign In →'}
+              {isLoading ? 'SIGNING IN...' : 'SIGN IN →'}
             </button>
           </form>
         </div>

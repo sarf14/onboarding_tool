@@ -251,23 +251,34 @@ export default function AdminPanel() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+        background: '#001e49',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Inter', sans-serif",
+        position: 'relative'
       }}>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
             width: '64px',
             height: '64px',
-            border: '4px solid rgba(255, 255, 255, 0.3)',
-            borderTopColor: '#ffffff',
-            borderRadius: '50%',
+            border: '4px solid #141943',
+            borderTopColor: '#163791',
+            borderRadius: '0',
+            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
             animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
+            margin: '0 auto 20px',
+            borderRightColor: '#001a62',
+            borderBottomColor: '#001a62',
+            borderLeftColor: '#001a62'
           }}></div>
-          <p style={{ color: '#ffffff', fontSize: '20px', fontWeight: 700 }}>Loading admin panel...</p>
+          <p style={{ 
+            color: '#efefef', 
+            fontSize: '20px', 
+            fontWeight: 700,
+            fontFamily: "'Orbitron', sans-serif",
+            letterSpacing: '2px'
+          }}>Loading admin panel...</p>
         </div>
       </div>
     );
@@ -276,9 +287,12 @@ export default function AdminPanel() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+      background: '#001e49',
       fontFamily: "'Inter', sans-serif",
-      padding: '40px'
+      padding: '40px',
+      color: '#efefef',
+      position: 'relative',
+      zIndex: 1
     }}>
       <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
         {/* Header */}
@@ -286,94 +300,213 @@ export default function AdminPanel() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '25px 40px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '25px',
+          padding: '30px 50px',
+          background: '#141943',
+          borderRadius: '0',
           marginBottom: '40px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
         }}>
-          <h1 style={{
-            fontSize: '36px',
-            fontWeight: 900,
-            background: 'linear-gradient(135deg, #ff006e, #8338ec, #3a86ff)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textTransform: 'uppercase',
-            letterSpacing: '3px'
-          }}>Admin Panel</h1>
+          {/* Angular corner accent */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '20px solid transparent',
+            borderTop: '20px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '20px solid transparent',
+            borderBottom: '20px solid #001a62'
+          }}></div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {/* AUTONEX Logo */}
+            <img 
+              src="https://autonex-onboard.vercel.app/logo.png" 
+              alt="AUTONEX Logo" 
+              style={{
+                height: '50px',
+                width: 'auto',
+                filter: 'brightness(0) invert(1)',
+                display: 'block'
+              }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const logoDiv = document.createElement('div');
+                  logoDiv.style.cssText = 'font-size: 42px; font-weight: 900; font-family: "Orbitron", sans-serif; color: #efefef; text-transform: uppercase; letter-spacing: 6px;';
+                  logoDiv.textContent = 'AUTONEX';
+                  parent.insertBefore(logoDiv, parent.firstChild);
+                }
+              }}
+            />
+            <h1 style={{
+              fontSize: '36px',
+              fontWeight: 900,
+              fontFamily: "'Orbitron', sans-serif",
+              color: '#efefef',
+              textTransform: 'uppercase',
+              letterSpacing: '4px'
+            }}>Admin Panel</h1>
+          </div>
           <div style={{ display: 'flex', gap: '15px' }}>
             <button
               onClick={() => router.push('/dashboard')}
               style={{
-                padding: '12px 28px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                border: 'none',
-                color: '#fff',
+                padding: '14px 32px',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: 'pointer',
-                borderRadius: '50px',
+                borderRadius: '0',
                 transition: 'all 0.3s',
-                boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                fontSize: '13px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >Dashboard</button>
             <button
               onClick={() => setShowAddUserModal(true)}
               style={{
-                padding: '12px 28px',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                border: 'none',
-                color: '#fff',
+                padding: '14px 32px',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: 'pointer',
-                borderRadius: '50px',
+                borderRadius: '0',
                 transition: 'all 0.3s',
-                boxShadow: '0 5px 15px rgba(16, 185, 129, 0.4)'
+                clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                fontSize: '13px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >+ Add User</button>
             <button
               onClick={() => setShowAssignModal(true)}
               style={{
-                padding: '12px 28px',
-                background: 'linear-gradient(135deg, #10b981, #3a86ff)',
-                border: 'none',
-                color: '#fff',
+                padding: '14px 32px',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: 'pointer',
-                borderRadius: '50px',
+                borderRadius: '0',
                 transition: 'all 0.3s',
-                boxShadow: '0 5px 15px rgba(16, 185, 129, 0.4)'
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                fontSize: '13px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >Assign Mentor</button>
             <button
               onClick={resetEverything}
               disabled={isResetting}
               style={{
-                padding: '12px 28px',
-                background: isResetting 
-                  ? '#666666' 
-                  : 'linear-gradient(135deg, #dc2626, #b91c1c)',
-                border: 'none',
-                color: '#fff',
+                padding: '14px 32px',
+                background: isResetting ? '#666666' : '#dc2626',
+                border: '2px solid #b91c1c',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: isResetting ? 'not-allowed' : 'pointer',
-                borderRadius: '50px',
+                borderRadius: '0',
                 transition: 'all 0.3s',
-                boxShadow: isResetting ? 'none' : '0 5px 15px rgba(220, 38, 38, 0.4)',
+                clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                fontSize: '13px',
                 opacity: isResetting ? 0.6 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!isResetting) {
+                  e.currentTarget.style.background = '#b91c1c';
+                  e.currentTarget.style.borderColor = '#dc2626';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isResetting) {
+                  e.currentTarget.style.background = '#dc2626';
+                  e.currentTarget.style.borderColor = '#b91c1c';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }
               }}
             >{isResetting ? 'Resetting...' : 'Reset Everything'}</button>
             <button
               onClick={logout}
               style={{
-                padding: '12px 28px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                border: 'none',
-                color: '#fff',
+                padding: '14px 32px',
+                background: '#001a62',
+                border: '2px solid #163791',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: 'pointer',
-                borderRadius: '50px',
+                borderRadius: '0',
                 transition: 'all 0.3s',
-                boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                fontSize: '13px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >Logout</button>
           </div>
@@ -381,14 +514,37 @@ export default function AdminPanel() {
 
         {/* Filters */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
+          background: '#141943',
           padding: '25px',
-          borderRadius: '25px',
+          borderRadius: '0',
           marginBottom: '30px',
           display: 'flex',
           gap: '20px',
-          alignItems: 'center'
+          alignItems: 'center',
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px))'
         }}>
+          {/* Angular corner accent */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '15px solid transparent',
+            borderTop: '15px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '15px solid transparent',
+            borderBottom: '15px solid #001a62'
+          }}></div>
           <input
             type="text"
             placeholder="Search users..."
@@ -397,10 +553,21 @@ export default function AdminPanel() {
             style={{
               flex: 1,
               padding: '15px 20px',
-              border: '2px solid #e5e7eb',
-              borderRadius: '50px',
+              background: '#001e49',
+              border: '2px solid #163791',
+              borderRadius: '0',
               fontSize: '16px',
-              outline: 'none'
+              outline: 'none',
+              color: '#efefef',
+              fontFamily: "'Inter', sans-serif"
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = '#001a62';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(22, 55, 145, 0.5)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = '#163791';
+              e.currentTarget.style.boxShadow = 'none';
             }}
           />
           <select
@@ -408,55 +575,81 @@ export default function AdminPanel() {
             onChange={(e) => setSelectedRole(e.target.value)}
             style={{
               padding: '15px 20px',
-              border: '2px solid #e5e7eb',
-              borderRadius: '50px',
+              background: '#001e49',
+              border: '2px solid #163791',
+              borderRadius: '0',
               fontSize: '16px',
               outline: 'none',
               cursor: 'pointer',
-              color: '#000',
-              backgroundColor: '#fff'
+              color: '#efefef',
+              fontFamily: "'Inter', sans-serif"
             }}
           >
-            <option value="" style={{ color: '#000' }}>All Roles</option>
-            <option value="TRAINEE" style={{ color: '#000' }}>Trainee</option>
-            <option value="MENTOR" style={{ color: '#000' }}>Mentor</option>
-            <option value="ADMIN" style={{ color: '#000' }}>Admin</option>
+            <option value="" style={{ color: '#efefef', background: '#001e49' }}>All Roles</option>
+            <option value="TRAINEE" style={{ color: '#efefef', background: '#001e49' }}>Trainee</option>
+            <option value="MENTOR" style={{ color: '#efefef', background: '#001e49' }}>Mentor</option>
+            <option value="ADMIN" style={{ color: '#efefef', background: '#001e49' }}>Admin</option>
           </select>
         </div>
 
         {/* Users Table */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
+          background: '#141943',
           padding: '30px',
-          borderRadius: '25px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          borderRadius: '0',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
         }}>
+          {/* Angular corner accent */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '20px solid transparent',
+            borderTop: '20px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '20px solid transparent',
+            borderBottom: '20px solid #001a62'
+          }}></div>
           <h2 style={{
             fontSize: '24px',
             fontWeight: 900,
-            color: '#333',
+            fontFamily: "'Orbitron', sans-serif",
+            color: '#efefef',
             marginBottom: '25px',
-            textTransform: 'uppercase'
+            textTransform: 'uppercase',
+            letterSpacing: '3px'
           }}>Users ({users.length})</h2>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, color: '#333' }}>Name</th>
-                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, color: '#333' }}>Email</th>
-                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, color: '#333' }}>Roles</th>
-                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, color: '#333' }}>Progress</th>
-                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, color: '#333' }}>Quiz Scores</th>
-                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, color: '#333' }}>Mentor</th>
-                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, color: '#333' }}>Status</th>
-                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, color: '#333' }}>Actions</th>
+                <tr style={{ borderBottom: '2px solid #163791' }}>
+                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>Name</th>
+                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>Email</th>
+                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>Roles</th>
+                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>Progress</th>
+                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>Quiz Scores</th>
+                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>Mentor</th>
+                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>Status</th>
+                  <th style={{ padding: '15px', textAlign: 'left', fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '15px', color: '#333' }}>{u.name}</td>
-                    <td style={{ padding: '15px', color: '#333' }}>{u.email}</td>
+                  <tr key={u.id} style={{ borderBottom: '1px solid #163791' }}>
+                    <td style={{ padding: '15px', color: '#efefef' }}>{u.name}</td>
+                    <td style={{ padding: '15px', color: '#efefef' }}>{u.email}</td>
                     <td style={{ padding: '15px' }}>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         {u.roles.map((role) => (
@@ -474,10 +667,10 @@ export default function AdminPanel() {
                         ))}
                       </div>
                     </td>
-                    <td style={{ padding: '15px', color: '#333' }}>
+                    <td style={{ padding: '15px', color: '#efefef' }}>
                       {u.progress}% ({u.completedSections}/4)
                     </td>
-                    <td style={{ padding: '15px', color: '#333' }}>
+                    <td style={{ padding: '15px', color: '#efefef' }}>
                       {u.sectionProgress && u.sectionProgress.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                           {[1, 2, 3, 4].map((sectionNum) => {
@@ -515,14 +708,14 @@ export default function AdminPanel() {
                             const quizScore = sectionProgress?.quizScore;
                             return quizScore !== undefined && quizScore >= 80;
                           }) && (
-                            <span style={{ fontSize: '12px', color: '#666' }}>No quizzes passed</span>
+                            <span style={{ fontSize: '12px', color: '#efefef', opacity: 0.7 }}>No quizzes passed</span>
                           )}
                         </div>
                       ) : (
-                        <span style={{ fontSize: '12px', color: '#666' }}>No progress</span>
+                        <span style={{ fontSize: '12px', color: '#efefef', opacity: 0.7 }}>No progress</span>
                       )}
                     </td>
-                    <td style={{ padding: '15px', color: '#333' }}>
+                    <td style={{ padding: '15px', color: '#efefef' }}>
                       {u.mentor ? u.mentor.name : ''}
                     </td>
                     <td style={{ padding: '15px' }}>
@@ -616,24 +809,49 @@ export default function AdminPanel() {
             zIndex: 1000
           }}>
             <div style={{
-              background: '#fff',
+              background: '#141943',
               padding: '40px',
-              borderRadius: '25px',
+              borderRadius: '0',
               maxWidth: '500px',
               width: '90%',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+              border: '3px solid #163791',
+              borderLeft: '8px solid #163791',
+              position: 'relative',
+              clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
             }}>
+              {/* Angular corner accent */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '0',
+                height: '0',
+                borderLeft: '20px solid transparent',
+                borderTop: '20px solid #001a62'
+              }}></div>
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: '0',
+                height: '0',
+                borderRight: '20px solid transparent',
+                borderBottom: '20px solid #001a62'
+              }}></div>
               <h2 style={{
                 fontSize: '24px',
                 fontWeight: 900,
-                color: '#333',
+                fontFamily: "'Orbitron', sans-serif",
+                color: '#efefef',
                 marginBottom: '25px',
-                textTransform: 'uppercase'
+                textTransform: 'uppercase',
+                letterSpacing: '3px'
               }}>Add New User</h2>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>
                     Name *
                   </label>
                   <input
@@ -643,17 +861,20 @@ export default function AdminPanel() {
                     style={{
                       width: '100%',
                       padding: '12px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '10px',
+                      background: '#001e49',
+                      border: '2px solid #163791',
+                      borderRadius: '0',
                       fontSize: '16px',
-                      outline: 'none'
+                      outline: 'none',
+                      color: '#efefef',
+                      fontFamily: "'Inter', sans-serif"
                     }}
                     placeholder="Enter user name"
                   />
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>
                     Email *
                   </label>
                   <input
@@ -663,17 +884,20 @@ export default function AdminPanel() {
                     style={{
                       width: '100%',
                       padding: '12px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '10px',
+                      background: '#001e49',
+                      border: '2px solid #163791',
+                      borderRadius: '0',
                       fontSize: '16px',
-                      outline: 'none'
+                      outline: 'none',
+                      color: '#efefef',
+                      fontFamily: "'Inter', sans-serif"
                     }}
                     placeholder="user@example.com"
                   />
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>
                     Password *
                   </label>
                   <input
@@ -683,17 +907,20 @@ export default function AdminPanel() {
                     style={{
                       width: '100%',
                       padding: '12px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '10px',
+                      background: '#001e49',
+                      border: '2px solid #163791',
+                      borderRadius: '0',
                       fontSize: '16px',
-                      outline: 'none'
+                      outline: 'none',
+                      color: '#efefef',
+                      fontFamily: "'Inter', sans-serif"
                     }}
                     placeholder="Enter password"
                   />
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>
                     Role *
                   </label>
                   <select
@@ -702,18 +929,19 @@ export default function AdminPanel() {
                     style={{
                       width: '100%',
                       padding: '12px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '10px',
+                      background: '#001e49',
+                      border: '2px solid #163791',
+                      borderRadius: '0',
                       fontSize: '16px',
                       outline: 'none',
                       cursor: 'pointer',
-                      color: '#000',
-                      backgroundColor: '#fff'
+                      color: '#efefef',
+                      fontFamily: "'Inter', sans-serif"
                     }}
                   >
-                    <option value="TRAINEE" style={{ color: '#000' }}>Trainee</option>
-                    <option value="MENTOR" style={{ color: '#000' }}>Mentor</option>
-                    <option value="ADMIN" style={{ color: '#000' }}>Admin</option>
+                    <option value="TRAINEE" style={{ color: '#efefef', background: '#001e49' }}>Trainee</option>
+                    <option value="MENTOR" style={{ color: '#efefef', background: '#001e49' }}>Mentor</option>
+                    <option value="ADMIN" style={{ color: '#efefef', background: '#001e49' }}>Admin</option>
                   </select>
                 </div>
               </div>
@@ -724,13 +952,26 @@ export default function AdminPanel() {
                   style={{
                     flex: 1,
                     padding: '15px',
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
-                    border: 'none',
-                    color: '#fff',
+                    background: '#163791',
+                    border: '2px solid #001a62',
+                    color: '#efefef',
                     fontWeight: 700,
-                    borderRadius: '10px',
+                    borderRadius: '0',
                     cursor: 'pointer',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                    transition: 'all 0.3s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#001a62';
+                    e.currentTarget.style.borderColor = '#163791';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#163791';
+                    e.currentTarget.style.borderColor = '#001a62';
                   }}
                 >
                   Create User
@@ -743,13 +984,26 @@ export default function AdminPanel() {
                   style={{
                     flex: 1,
                     padding: '15px',
-                    background: '#e5e7eb',
-                    border: 'none',
-                    color: '#333',
+                    background: '#001a62',
+                    border: '2px solid #163791',
+                    color: '#efefef',
                     fontWeight: 700,
-                    borderRadius: '10px',
+                    borderRadius: '0',
                     cursor: 'pointer',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                    transition: 'all 0.3s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#163791';
+                    e.currentTarget.style.borderColor = '#001a62';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#001a62';
+                    e.currentTarget.style.borderColor = '#163791';
                   }}
                 >
                   Cancel
@@ -774,22 +1028,48 @@ export default function AdminPanel() {
             zIndex: 1000
           }}>
             <div style={{
-              background: '#fff',
+              background: '#141943',
               padding: '40px',
-              borderRadius: '25px',
+              borderRadius: '0',
               maxWidth: '600px',
               width: '90%',
               maxHeight: '80vh',
-              overflow: 'auto'
+              overflow: 'auto',
+              border: '3px solid #163791',
+              borderLeft: '8px solid #163791',
+              position: 'relative',
+              clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
             }}>
+              {/* Angular corner accent */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '0',
+                height: '0',
+                borderLeft: '20px solid transparent',
+                borderTop: '20px solid #001a62'
+              }}></div>
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: '0',
+                height: '0',
+                borderRight: '20px solid transparent',
+                borderBottom: '20px solid #001a62'
+              }}></div>
               <h2 style={{
                 fontSize: '24px',
                 fontWeight: 900,
+                fontFamily: "'Orbitron', sans-serif",
                 marginBottom: '25px',
-                color: '#333'
+                color: '#efefef',
+                textTransform: 'uppercase',
+                letterSpacing: '3px'
               }}>Assign Mentor</h2>
               <div style={{ marginBottom: '25px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 600, color: '#333' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 600, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>
                   Select Mentor
                 </label>
                 <select
@@ -798,27 +1078,28 @@ export default function AdminPanel() {
                   style={{
                     width: '100%',
                     padding: '15px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '50px',
+                    background: '#001e49',
+                    border: '2px solid #163791',
+                    borderRadius: '0',
                     fontSize: '16px',
                     outline: 'none',
-                    color: '#000',
-                    backgroundColor: '#fff'
+                    color: '#efefef',
+                    fontFamily: "'Inter', sans-serif"
                   }}
                 >
-                  <option value="" style={{ color: '#000' }}>Choose a mentor...</option>
+                  <option value="" style={{ color: '#efefef', background: '#001e49' }}>Choose a mentor...</option>
                   {mentors.map((m) => (
-                    <option key={m.id} value={m.id} style={{ color: '#000' }}>
+                    <option key={m.id} value={m.id} style={{ color: '#efefef', background: '#001e49' }}>
                       {m.name} ({m.menteeCount || 0} mentees)
                     </option>
                   ))}
                 </select>
               </div>
               <div style={{ marginBottom: '25px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 600, color: '#333' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 600, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>
                   Select Trainees
                 </label>
-                <div style={{ maxHeight: '300px', overflow: 'auto', border: '2px solid #e5e7eb', borderRadius: '15px', padding: '15px' }}>
+                <div style={{ maxHeight: '300px', overflow: 'auto', border: '2px solid #163791', borderRadius: '0', padding: '15px', background: '#001e49' }}>
                   {trainees.map((t) => (
                     <label
                       key={t.id}
@@ -827,10 +1108,12 @@ export default function AdminPanel() {
                         alignItems: 'center',
                         padding: '10px',
                         cursor: 'pointer',
-                        borderRadius: '10px',
+                        borderRadius: '0',
                         marginBottom: '5px',
-                        background: selectedTrainees.includes(t.id) ? '#f3f4f6' : 'transparent',
-                        color: '#000'
+                        background: selectedTrainees.includes(t.id) ? '#163791' : 'transparent',
+                        color: '#efefef',
+                        border: selectedTrainees.includes(t.id) ? '2px solid #001a62' : '2px solid transparent',
+                        transition: 'all 0.3s'
                       }}
                     >
                       <input
@@ -845,7 +1128,7 @@ export default function AdminPanel() {
                         }}
                         style={{ marginRight: '10px' }}
                       />
-                      <span style={{ color: '#000' }}>{t.name} ({t.email})</span>
+                      <span style={{ color: '#efefef' }}>{t.name} ({t.email})</span>
                     </label>
                   ))}
                 </div>
@@ -858,13 +1141,27 @@ export default function AdminPanel() {
                     setSelectedMentor('');
                   }}
                   style={{
-                    padding: '12px 28px',
-                    background: '#e5e7eb',
-                    color: '#333',
-                    border: 'none',
-                    borderRadius: '50px',
+                    padding: '14px 32px',
+                    background: '#001a62',
+                    border: '2px solid #163791',
+                    color: '#efefef',
+                    borderRadius: '0',
                     cursor: 'pointer',
-                    fontWeight: 600
+                    fontWeight: 700,
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    fontSize: '13px',
+                    clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+                    transition: 'all 0.3s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#163791';
+                    e.currentTarget.style.borderColor = '#001a62';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#001a62';
+                    e.currentTarget.style.borderColor = '#163791';
                   }}
                 >Cancel</button>
                 <button
@@ -876,13 +1173,27 @@ export default function AdminPanel() {
                     assignMentor();
                   }}
                   style={{
-                    padding: '12px 28px',
-                    background: 'linear-gradient(135deg, #10b981, #3a86ff)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '50px',
+                    padding: '14px 32px',
+                    background: '#163791',
+                    border: '2px solid #001a62',
+                    color: '#efefef',
+                    borderRadius: '0',
                     cursor: 'pointer',
-                    fontWeight: 600
+                    fontWeight: 700,
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    fontSize: '13px',
+                    clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                    transition: 'all 0.3s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#001a62';
+                    e.currentTarget.style.borderColor = '#163791';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#163791';
+                    e.currentTarget.style.borderColor = '#001a62';
                   }}
                 >Assign</button>
               </div>

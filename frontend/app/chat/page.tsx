@@ -84,41 +84,121 @@ export default function ChatPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#000000',
+      background: '#001e49',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: "'Inter', sans-serif"
+      fontFamily: "'Inter', sans-serif",
+      color: '#efefef',
+      position: 'relative',
+      zIndex: 1
     }}>
       {/* Header */}
       <header style={{
-        background: '#111111',
-        borderBottom: '1px solid #333333',
-        padding: '20px',
+        background: '#141943',
+        borderBottom: '3px solid #163791',
+        borderLeft: '8px solid #163791',
+        padding: '30px 50px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        position: 'relative',
+        clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        {/* Angular corner accent */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: '0',
+          height: '0',
+          borderLeft: '20px solid transparent',
+          borderTop: '20px solid #001a62'
+        }}></div>
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '0',
+          height: '0',
+          borderRight: '20px solid transparent',
+          borderBottom: '20px solid #001a62'
+        }}></div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <button
             onClick={() => router.back()}
             style={{
-              background: 'transparent',
-              border: '1px solid #333333',
-              color: '#ffffff',
-              padding: '8px 16px',
-              borderRadius: '6px',
+              background: '#001a62',
+              border: '2px solid #163791',
+              color: '#efefef',
+              padding: '12px 24px',
+              borderRadius: '0',
               cursor: 'pointer',
-              fontSize: '14px'
+              fontSize: '14px',
+              fontFamily: "'Orbitron', sans-serif",
+              letterSpacing: '1px',
+              textTransform: 'uppercase',
+              fontWeight: 700,
+              transition: 'all 0.3s',
+              clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#163791';
+              e.currentTarget.style.borderColor = '#001a62';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#001a62';
+              e.currentTarget.style.borderColor = '#163791';
+              e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
             ← Back
           </button>
-          <h1 style={{ color: '#ffffff', fontSize: '24px', fontWeight: 700, margin: 0 }}>
-            Support Chat
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {/* AUTONEX Logo */}
+            <img 
+              src="https://autonex-onboard.vercel.app/logo.png" 
+              alt="AUTONEX Logo" 
+              style={{
+                height: '50px',
+                width: 'auto',
+                filter: 'brightness(0) invert(1)',
+                display: 'block'
+              }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const logoDiv = document.createElement('div');
+                  logoDiv.style.cssText = 'font-size: 42px; font-weight: 900; font-family: "Orbitron", sans-serif; color: #efefef; text-transform: uppercase; letter-spacing: 6px;';
+                  logoDiv.textContent = 'AUTONEX';
+                  parent.insertBefore(logoDiv, parent.firstChild);
+                }
+              }}
+            />
+            <h1 style={{ 
+              color: '#efefef', 
+              fontSize: '28px', 
+              fontWeight: 900, 
+              margin: 0,
+              fontFamily: "'Orbitron', sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '4px'
+            }}>
+              Support Chat
+            </h1>
+          </div>
         </div>
         {user && (
-          <div style={{ color: '#888888', fontSize: '14px' }}>
+          <div style={{ 
+            color: '#efefef', 
+            fontSize: '14px',
+            fontFamily: "'Orbitron', sans-serif",
+            letterSpacing: '1px',
+            opacity: 0.9
+          }}>
             {user.name || user.email}
           </div>
         )}
@@ -128,20 +208,23 @@ export default function ChatPage() {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '20px',
+        padding: '30px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '15px'
+        gap: '20px',
+        background: '#001e49'
       }}>
         {messages.length === 0 && (
           <div style={{
             textAlign: 'center',
-            color: '#888888',
+            color: '#efefef',
             marginTop: '100px',
-            fontSize: '16px'
+            fontSize: '18px',
+            fontFamily: "'Orbitron', sans-serif",
+            letterSpacing: '2px'
           }}>
-            <p>Start a conversation with the support assistant</p>
-            <p style={{ fontSize: '14px', marginTop: '10px' }}>
+            <p style={{ marginBottom: '15px', opacity: 0.9 }}>Start a conversation with the support assistant</p>
+            <p style={{ fontSize: '14px', opacity: 0.7, fontFamily: "'Inter', sans-serif", letterSpacing: 'normal' }}>
               Ask questions about the onboarding process, error categorization, or any other topics.
             </p>
           </div>
@@ -158,14 +241,46 @@ export default function ChatPage() {
           >
             <div style={{
               maxWidth: '70%',
-              padding: '12px 16px',
-              borderRadius: '12px',
-              background: message.role === 'user' ? '#62AADE' : '#1a1a1a',
-              color: '#ffffff',
-              border: message.role === 'assistant' ? '1px solid #333333' : 'none',
+              padding: '15px 20px',
+              borderRadius: '0',
+              background: message.role === 'user' ? '#163791' : '#141943',
+              color: '#efefef',
+              border: message.role === 'user' ? '2px solid #001a62' : '2px solid #163791',
+              borderLeft: message.role === 'assistant' ? '8px solid #163791' : 'none',
+              borderRight: message.role === 'user' ? '8px solid #001a62' : 'none',
               wordWrap: 'break-word',
-              whiteSpace: 'pre-wrap'
+              whiteSpace: 'pre-wrap',
+              position: 'relative',
+              clipPath: message.role === 'user' 
+                ? 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)'
+                : 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '15px',
+              lineHeight: '1.6'
             }}>
+              {/* Angular corner accent for assistant messages */}
+              {message.role === 'assistant' && (
+                <>
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '0',
+                    height: '0',
+                    borderLeft: '8px solid transparent',
+                    borderTop: '8px solid #001a62'
+                  }}></div>
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    width: '0',
+                    height: '0',
+                    borderRight: '8px solid transparent',
+                    borderBottom: '8px solid #001a62'
+                  }}></div>
+                </>
+              )}
               {message.content}
             </div>
           </div>
@@ -178,12 +293,27 @@ export default function ChatPage() {
             marginBottom: '10px'
           }}>
             <div style={{
-              padding: '12px 16px',
-              borderRadius: '12px',
-              background: '#1a1a1a',
-              color: '#888888',
-              border: '1px solid #333333'
+              padding: '15px 20px',
+              borderRadius: '0',
+              background: '#141943',
+              color: '#efefef',
+              border: '2px solid #163791',
+              borderLeft: '8px solid #163791',
+              position: 'relative',
+              clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+              fontFamily: "'Orbitron', sans-serif",
+              letterSpacing: '2px'
             }}>
+              {/* Angular corner accent */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '0',
+                height: '0',
+                borderLeft: '8px solid transparent',
+                borderTop: '8px solid #001a62'
+              }}></div>
               Thinking...
             </div>
           </div>
@@ -194,13 +324,36 @@ export default function ChatPage() {
 
       {/* Input Container */}
       <div style={{
-        background: '#111111',
-        borderTop: '1px solid #333333',
-        padding: '20px'
+        background: '#141943',
+        borderTop: '3px solid #163791',
+        borderLeft: '8px solid #163791',
+        padding: '30px',
+        position: 'relative',
+        clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
       }}>
+        {/* Angular corner accent */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: '0',
+          height: '0',
+          borderLeft: '20px solid transparent',
+          borderTop: '20px solid #001a62'
+        }}></div>
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '0',
+          height: '0',
+          borderRight: '20px solid transparent',
+          borderBottom: '20px solid #001a62'
+        }}></div>
+        
         <div style={{
           display: 'flex',
-          gap: '10px',
+          gap: '15px',
           alignItems: 'flex-end'
         }}>
           <textarea
@@ -211,17 +364,26 @@ export default function ChatPage() {
             disabled={isLoading}
             style={{
               flex: 1,
-              background: '#1a1a1a',
-              border: '1px solid #333333',
-              borderRadius: '8px',
-              padding: '12px',
-              color: '#ffffff',
-              fontSize: '14px',
+              background: '#001e49',
+              border: '2px solid #163791',
+              borderRadius: '0',
+              padding: '15px 20px',
+              color: '#efefef',
+              fontSize: '15px',
               resize: 'none',
-              minHeight: '50px',
+              minHeight: '60px',
               maxHeight: '150px',
-              fontFamily: 'inherit',
-              outline: 'none'
+              fontFamily: "'Inter', sans-serif",
+              outline: 'none',
+              transition: 'all 0.3s'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = '#001a62';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(22, 55, 145, 0.5)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = '#163791';
+              e.currentTarget.style.boxShadow = 'none';
             }}
             rows={1}
           />
@@ -229,15 +391,34 @@ export default function ChatPage() {
             onClick={sendMessage}
             disabled={!inputMessage.trim() || isLoading}
             style={{
-              background: isLoading || !inputMessage.trim() ? '#333333' : '#62AADE',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
+              background: isLoading || !inputMessage.trim() ? '#001a62' : '#163791',
+              color: '#efefef',
+              border: '2px solid #001a62',
+              borderRadius: '0',
+              padding: '15px 32px',
               cursor: isLoading || !inputMessage.trim() ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              fontWeight: 600,
-              opacity: isLoading || !inputMessage.trim() ? 0.5 : 1
+              fontSize: '16px',
+              fontWeight: 900,
+              fontFamily: "'Orbitron', sans-serif",
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              opacity: isLoading || !inputMessage.trim() ? 0.5 : 1,
+              transition: 'all 0.3s',
+              clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading && inputMessage.trim()) {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isLoading && inputMessage.trim()) {
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }
             }}
           >
             Send
