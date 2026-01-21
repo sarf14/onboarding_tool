@@ -75,22 +75,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/content', contentRoutes);
-<<<<<<< HEAD
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received: closing HTTP server');
-  process.exit(0);
-});
-=======
-app.use('/api/chat', chatRoutes);
 app.use('/api/h2h', h2hRoutes);
->>>>>>> c5e62bc (Update backend with optimizations and H2H tool)
 
 // Start server
 const server = app.listen(config.port, () => {
