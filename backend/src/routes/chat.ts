@@ -128,7 +128,7 @@ router.get('/search', authenticate, async (req: AuthRequest, res) => {
     res.json({
       success: true,
       query,
-      results: results.map((chunk) => ({
+      results: results.map((chunk: any) => ({
         id: chunk.id,
         source: chunk.source,
         content: chunk.content.substring(0, 500) + '...',
