@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../config/database';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { getISTDate } from '../utils/date';
 
 const router = express.Router();
 
@@ -70,7 +71,7 @@ router.post('/assign', authenticate, authorize('ADMIN'), async (req: AuthRequest
 
       // Set programStartDate if this is the first mentor assignment
       if (!mentee?.programStartDate) {
-        updateData.programStartDate = new Date().toISOString();
+        updateData.programStartDate = getISTDate();
         updateData.currentDay = 1;
       }
 
@@ -118,7 +119,7 @@ router.delete('/remove/:menteeId', authenticate, authorize('ADMIN'), async (req:
     // Update mentor history
     await supabase
       .from('mentor_history')
-      .update({ removedAt: new Date().toISOString() })
+      .update({ removedAt: getISTDate() })
       .eq('userId', menteeId)
       .eq('mentorId', mentee.mentorId)
       .is('removedAt', null);

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 export default function FloatingChatIcon() {
@@ -11,42 +12,65 @@ export default function FloatingChatIcon() {
     return null;
   }
 
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
-    <button
-      onClick={() => router.push('/chat')}
-      style={{
-        position: 'fixed',
-        bottom: '30px',
-        right: '30px',
-        width: '64px',
-        height: '64px',
-        background: '#163791',
-        border: '3px solid #001a62',
-        borderRadius: '0',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 8px 25px rgba(22, 55, 145, 0.4)',
-        transition: 'all 0.3s',
-        zIndex: 1000,
-        clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
-        animation: 'float 3s ease-in-out infinite'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-5px) scale(1.1)';
-        e.currentTarget.style.boxShadow = '0 12px 35px rgba(22, 55, 145, 0.6)';
-        e.currentTarget.style.background = '#001a62';
-        e.currentTarget.style.borderColor = '#163791';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-        e.currentTarget.style.boxShadow = '0 8px 25px rgba(22, 55, 145, 0.4)';
-        e.currentTarget.style.background = '#163791';
-        e.currentTarget.style.borderColor = '#001a62';
-      }}
-      aria-label="Open chat"
-    >
+    <div style={{ position: 'fixed', bottom: '30px', right: '30px', zIndex: 1000 }}>
+      {showTooltip && (
+        <div style={{
+          position: 'absolute',
+          bottom: '80px',
+          right: '0',
+          background: '#141943',
+          border: '2px solid #163791',
+          color: '#efefef',
+          padding: '8px 15px',
+          borderRadius: '0',
+          fontSize: '14px',
+          fontWeight: 700,
+          fontFamily: "'Orbitron', sans-serif",
+          letterSpacing: '1px',
+          whiteSpace: 'nowrap',
+          boxShadow: '0 5px 20px rgba(22, 55, 145, 0.5)',
+          clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
+          animation: 'fadeIn 0.2s ease-in'
+        }}>
+          Autonex Bot
+        </div>
+      )}
+      <button
+        onClick={() => router.push('/chat')}
+        style={{
+          width: '64px',
+          height: '64px',
+          background: '#163791',
+          border: '3px solid #001a62',
+          borderRadius: '0',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 8px 25px rgba(22, 55, 145, 0.4)',
+          transition: 'all 0.3s',
+          clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+          animation: 'float 3s ease-in-out infinite'
+        }}
+        onMouseEnter={(e) => {
+          setShowTooltip(true);
+          e.currentTarget.style.transform = 'translateY(-5px) scale(1.1)';
+          e.currentTarget.style.boxShadow = '0 12px 35px rgba(22, 55, 145, 0.6)';
+          e.currentTarget.style.background = '#001a62';
+          e.currentTarget.style.borderColor = '#163791';
+        }}
+        onMouseLeave={(e) => {
+          setShowTooltip(false);
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 25px rgba(22, 55, 145, 0.4)';
+          e.currentTarget.style.background = '#163791';
+          e.currentTarget.style.borderColor = '#001a62';
+        }}
+        aria-label="Open chat"
+      >
       {/* Angular corner accent */}
       <div style={{
         position: 'absolute',
@@ -69,6 +93,7 @@ export default function FloatingChatIcon() {
       >
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </svg>
-    </button>
+      </button>
+    </div>
   );
 }

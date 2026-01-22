@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../config/database';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { getISTDate } from '../utils/date';
 
 const router = express.Router();
 
@@ -89,7 +90,7 @@ router.get('/users', async (req, res) => {
           ...p,
           quizScore: sectionQuiz?.percentage || p.dayEndQuizScore,
           quizCompletedAt: sectionQuiz?.completedAt,
-          passedQuiz: sectionQuiz ? sectionQuiz.percentage >= 80 : (p.dayEndQuizScore ? p.dayEndQuizScore >= 80 : false),
+          passedQuiz: sectionQuiz ? sectionQuiz.percentage >= 90 : (p.dayEndQuizScore ? p.dayEndQuizScore >= 90 : false),
         };
       });
 
@@ -303,7 +304,7 @@ router.post('/assign-mentor', async (req: AuthRequest, res) => {
       const updateData: any = { mentorId };
 
       if (!trainee?.programStartDate) {
-        updateData.programStartDate = new Date().toISOString();
+        updateData.programStartDate = getISTDate();
         updateData.currentDay = 1; // Use currentDay instead of currentSection
       }
 
@@ -372,7 +373,7 @@ router.delete('/remove-mentor/:traineeId', async (req: AuthRequest, res) => {
     // Update mentor history
     await supabase
       .from('mentor_history')
-      .update({ removedAt: new Date().toISOString() })
+      .update({ removedAt: getISTDate() })
       .eq('userId', traineeId)
       .eq('mentorId', trainee.mentorId)
       .is('removedAt', null);

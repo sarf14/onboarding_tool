@@ -94,6 +94,18 @@ html {
   }
 }
 
+/* Fade in animation for tooltips */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Select option styling */
 select option {
   background: #001e49;

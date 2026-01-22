@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getISTDate } from '../utils/date';
 
 const router = express.Router();
 
@@ -19,8 +20,27 @@ router.post('/submit', authenticate, async (req: AuthRequest, res) => {
     const maxScore = questions.length;
 
     questions.forEach((question: any, index: number) => {
-      if (question.correctAnswer === answers[index]) {
-        score++;
+      const userAnswer = answers[index];
+      const correctAnswer = question.correctAnswer;
+      
+      // Support both single correct answer and array of correct answers
+      if (Array.isArray(correctAnswer)) {
+        // Multi-select: user must select ALL correct answers
+        const userAnswers = Array.isArray(userAnswer) ? userAnswer : (userAnswer !== -1 ? [userAnswer] : []);
+        const correctAnswersSet = new Set(correctAnswer);
+        const userAnswersSet = new Set(userAnswers);
+        
+        // Check if user selected exactly the correct answers (same length and all match)
+        if (correctAnswersSet.size === userAnswersSet.size && 
+            correctAnswer.every((ans: number) => userAnswersSet.has(ans))) {
+          score++;
+        }
+      } else {
+        // Single correct answer
+        const userAns = Array.isArray(userAnswer) ? userAnswer[0] : userAnswer;
+        if (correctAnswer === userAns) {
+          score++;
+        }
       }
     });
 
@@ -89,14 +109,17 @@ router.post('/submit', authenticate, async (req: AuthRequest, res) => {
         console.error('Error fetching progress:', progressError);
       }
 
+      // Passing score is 90% (matching quiz requirement)
+      const passingScore = 90;
+      
       if (progress) {
         const { error: updateError } = await supabase
           .from('progress')
           .update({
             dayEndQuizScore: percentage,
-            status: percentage >= 80 ? 'COMPLETED' : 'IN_PROGRESS',
-            completedAt: percentage >= 80 ? new Date().toISOString() : progress.completedAt || null,
-            startedAt: progress.startedAt || new Date().toISOString(),
+            status: percentage >= passingScore ? 'COMPLETED' : (progress.status === 'COMPLETED' ? 'COMPLETED' : percentage > 0 ? 'IN_PROGRESS' : progress.status || 'NOT_STARTED'),
+            completedAt: percentage >= passingScore ? getISTDate() : progress.completedAt || null,
+            startedAt: progress.startedAt || getISTDate(),
           })
           .eq('userId', userId)
           .eq('day', dayNumber);
@@ -113,9 +136,9 @@ router.post('/submit', authenticate, async (req: AuthRequest, res) => {
             userId,
             day: dayNumber,
             dayEndQuizScore: percentage,
-            status: percentage >= 80 ? 'COMPLETED' : 'IN_PROGRESS',
-            startedAt: new Date().toISOString(),
-            completedAt: percentage >= 80 ? new Date().toISOString() : null,
+            status: percentage >= passingScore ? 'COMPLETED' : (percentage > 0 ? 'IN_PROGRESS' : 'NOT_STARTED'),
+            startedAt: getISTDate(),
+            completedAt: percentage >= passingScore ? getISTDate() : null,
           });
         
         if (insertError) {

@@ -3,6 +3,7 @@ import express from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { chatService, ChatMessage } from '../services/chatService';
 import { supabase } from '../config/database';
+import { getISTDate, getISTDateDaysAgo, getISTDateFromDate } from '../utils/date';
 
 const router = express.Router();
 
@@ -45,8 +46,10 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
     }
 
     // Save user message and assistant response to database (expires in 1 day)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 1); // 1 day from now
+    // Calculate expiration date in IST (1 day from now)
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + (24 * 60 * 60 * 1000)); // 1 day from now
+    const expiresAtIST = getISTDateFromDate(expiresAt);
 
     try {
       // Save user message
@@ -54,7 +57,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         userId,
         role: 'user',
         content: message,
-        expiresAt: expiresAt.toISOString(),
+        expiresAt: expiresAtIST,
       });
 
       if (userMsgError) {
@@ -73,7 +76,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         content: response.message,
         sources: response.sources || [],
         contextUsed: response.contextUsed || [],
-        expiresAt: expiresAt.toISOString(),
+        expiresAt: expiresAtIST,
       });
 
       if (assistantMsgError) {
@@ -94,7 +97,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       response: response.message,
       sources: response.sources,
       contextUsed: response.contextUsed,
-      timestamp: new Date().toISOString(),
+      timestamp: getISTDate(),
     });
   } catch (error) {
     console.error('Chat error:', error);
@@ -173,13 +176,12 @@ router.get('/history/:traineeId', authenticate, async (req: AuthRequest, res) =>
     }
 
     // Get chat history for this trainee (only from last 24 hours - older ones are automatically deleted by cleanup service)
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const oneDayAgo = getISTDateDaysAgo(1);
     const { data: messages, error: messagesError } = await supabase
       .from('chat_messages')
       .select('*')
       .eq('userId', traineeId)
-      .gte('createdAt', oneDayAgo.toISOString()) // Only get messages from last 24 hours
+      .gte('createdAt', oneDayAgo) // Only get messages from last 24 hours
       .order('createdAt', { ascending: true });
 
     if (messagesError) {
@@ -251,14 +253,13 @@ router.get('/history', authenticate, async (req: AuthRequest, res) => {
 
     // Get chat history for all mentees (only from last 24 hours - older ones are automatically deleted by cleanup service)
     const menteeIds = mentees.map(m => m.id);
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const oneDayAgo = getISTDateDaysAgo(1);
     
     const { data: allMessages, error: messagesError } = await supabase
       .from('chat_messages')
       .select('*')
       .in('userId', menteeIds)
-      .gte('createdAt', oneDayAgo.toISOString()) // Only get messages from last 24 hours
+      .gte('createdAt', oneDayAgo) // Only get messages from last 24 hours
       .order('createdAt', { ascending: true });
 
     if (messagesError) {

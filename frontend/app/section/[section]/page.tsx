@@ -67,23 +67,34 @@ export default function SectionContentPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+        background: '#001e49',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Inter', sans-serif",
+        position: 'relative'
       }}>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
             width: '64px',
             height: '64px',
-            border: '4px solid rgba(255, 255, 255, 0.3)',
-            borderTopColor: '#ffffff',
-            borderRadius: '50%',
+            border: '4px solid #141943',
+            borderTopColor: '#163791',
+            borderRadius: '0',
+            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
             animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
+            margin: '0 auto 20px',
+            borderRightColor: '#001a62',
+            borderBottomColor: '#001a62',
+            borderLeftColor: '#001a62'
           }}></div>
-          <p style={{ color: '#ffffff', fontSize: '20px', fontWeight: 700 }}>Loading content...</p>
+          <p style={{ 
+            color: '#efefef', 
+            fontSize: '20px', 
+            fontWeight: 700,
+            fontFamily: "'Orbitron', sans-serif",
+            letterSpacing: '2px'
+          }}>Loading content...</p>
         </div>
       </div>
     );
@@ -107,17 +118,20 @@ export default function SectionContentPage() {
         <h4 style={{
           fontSize: '24px',
           fontWeight: 900,
-          color: '#333',
-          textTransform: 'uppercase'
+          color: '#efefef',
+          textTransform: 'uppercase',
+          fontFamily: "'Orbitron', sans-serif",
+          letterSpacing: '2px'
         }}>{title}</h4>
         <div style={{
           position: 'relative',
           width: '100%',
-          borderRadius: '25px',
+          borderRadius: '0',
           overflow: 'hidden',
-          border: '4px solid #fff',
-          boxShadow: '0 15px 40px rgba(0, 0, 0, 0.2)',
-          paddingBottom: '56.25%'
+          border: '3px solid #163791',
+          boxShadow: '0 15px 40px rgba(0, 0, 0, 0.3)',
+          paddingBottom: '56.25%',
+          clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
         }}>
           <iframe
             src={embedUrl}
@@ -142,25 +156,32 @@ export default function SectionContentPage() {
             alignItems: 'center',
             gap: '10px',
             padding: '18px 45px',
-            background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-            color: '#fff',
-            borderRadius: '50px',
+            background: '#163791',
+            border: '2px solid #001a62',
+            color: '#efefef',
+            borderRadius: '0',
             fontWeight: 900,
             fontSize: '18px',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            boxShadow: '0 10px 30px rgba(131, 56, 236, 0.5)',
+            boxShadow: '0 10px 30px rgba(22, 55, 145, 0.5)',
             transition: 'all 0.3s',
-            letterSpacing: '1px',
-            textDecoration: 'none'
+            letterSpacing: '2px',
+            textDecoration: 'none',
+            fontFamily: "'Orbitron', sans-serif",
+            clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-            e.currentTarget.style.boxShadow = '0 15px 40px rgba(131, 56, 236, 0.7)';
+            e.currentTarget.style.boxShadow = '0 15px 40px rgba(22, 55, 145, 0.7)';
+            e.currentTarget.style.background = '#001a62';
+            e.currentTarget.style.borderColor = '#163791';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0) scale(1)';
-            e.currentTarget.style.boxShadow = '0 10px 30px rgba(131, 56, 236, 0.5)';
+            e.currentTarget.style.boxShadow = '0 10px 30px rgba(22, 55, 145, 0.5)';
+            e.currentTarget.style.background = '#163791';
+            e.currentTarget.style.borderColor = '#001a62';
           }}
         >
           Open in Google Drive
@@ -177,9 +198,11 @@ export default function SectionContentPage() {
         <h4 style={{
           fontSize: '24px',
           fontWeight: 900,
-          color: '#333',
+          color: '#efefef',
           textTransform: 'uppercase',
-          marginBottom: '20px'
+          marginBottom: '20px',
+          fontFamily: "'Orbitron', sans-serif",
+          letterSpacing: '2px'
         }}>Documents & Resources</h4>
         <div style={{
           display: 'flex',
@@ -197,47 +220,55 @@ export default function SectionContentPage() {
                 alignItems: 'center',
                 gap: '20px',
                 padding: '25px',
-                background: 'rgba(255, 255, 255, 0.95)',
-                border: '2px solid #e5e7eb',
-                borderRadius: '25px',
+                background: '#001e49',
+                border: '2px solid #163791',
+                borderRadius: '0',
                 cursor: 'pointer',
                 transition: 'all 0.4s',
-                boxShadow: '0 15px 40px rgba(0, 0, 0, 0.2)',
-                textDecoration: 'none'
+                boxShadow: '0 15px 40px rgba(0, 0, 0, 0.3)',
+                textDecoration: 'none',
+                position: 'relative',
+                clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-15px) rotate(2deg)';
-                e.currentTarget.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.3)';
-                e.currentTarget.style.borderColor = '#8338ec';
+                e.currentTarget.style.transform = 'translateX(5px)';
+                e.currentTarget.style.boxShadow = '0 10px 25px rgba(22, 55, 145, 0.5)';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.background = '#141943';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) rotate(0deg)';
-                e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.2)';
-                e.currentTarget.style.borderColor = '#e5e7eb';
+                e.currentTarget.style.transform = 'translateX(0)';
+                e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.3)';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.background = '#001e49';
               }}
             >
               <div style={{
                 padding: '15px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                borderRadius: '20px'
+                background: '#163791',
+                borderRadius: '0',
+                border: '2px solid #001a62',
+                clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))'
               }}>
-                <svg style={{ width: '32px', height: '32px', color: '#fff' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg style={{ width: '32px', height: '32px', color: '#efefef' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
-                  color: '#333',
+                  color: '#efefef',
                   fontWeight: 900,
                   fontSize: '18px',
                   textTransform: 'uppercase',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  fontFamily: "'Orbitron', sans-serif",
+                  letterSpacing: '1px'
                 }}>{doc.name}</p>
-                <p style={{ color: '#666', fontSize: '14px', marginTop: '5px', fontWeight: 600 }}>{doc.type || 'Document'}</p>
+                <p style={{ color: '#efefef', fontSize: '14px', marginTop: '5px', fontWeight: 600, opacity: 0.8, fontFamily: "'Inter', sans-serif" }}>{doc.type || 'Document'}</p>
               </div>
-              <svg style={{ width: '24px', height: '24px', color: '#8338ec' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg style={{ width: '24px', height: '24px', color: '#163791' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </a>
@@ -253,9 +284,10 @@ export default function SectionContentPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)',
+      background: '#001e49',
       fontFamily: "'Inter', sans-serif",
-      color: '#ffffff'
+      color: '#efefef',
+      position: 'relative'
     }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px' }}>
         {/* Header */}
@@ -263,33 +295,62 @@ export default function SectionContentPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '25px 40px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '25px',
+          padding: '30px 50px',
+          background: '#141943',
+          borderRadius: '0',
           marginBottom: '40px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))',
+          flexWrap: 'wrap',
+          gap: '20px'
         }}>
-          <div>
+          {/* Angular corner accents */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '20px solid transparent',
+            borderTop: '20px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '20px solid transparent',
+            borderBottom: '20px solid #001a62'
+          }}></div>
+          
+          <div style={{ flex: 1 }}>
             <div style={{
               fontSize: '36px',
               fontWeight: 900,
-              background: 'linear-gradient(135deg, #ff006e, #8338ec, #3a86ff)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: '#efefef',
               textTransform: 'uppercase',
               letterSpacing: '3px',
-              marginBottom: '10px'
+              marginBottom: '10px',
+              fontFamily: "'Orbitron', sans-serif"
             }}>Section {section}: {content.title}</div>
             <div style={{
               fontSize: '18px',
-              color: '#666',
-              fontWeight: 500
+              color: '#efefef',
+              fontWeight: 500,
+              opacity: 0.9,
+              fontFamily: "'Inter', sans-serif"
             }}>{content.description}</div>
             {content.estimatedDuration && (
               <div style={{
                 fontSize: '14px',
-                color: '#999',
-                marginTop: '5px'
+                color: '#efefef',
+                marginTop: '5px',
+                opacity: 0.8,
+                fontFamily: "'Inter', sans-serif"
               }}>Estimated Duration: {content.estimatedDuration}</div>
             )}
           </div>
@@ -297,22 +358,30 @@ export default function SectionContentPage() {
             onClick={() => router.push('/dashboard')}
             style={{
               padding: '12px 28px',
-              background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-              border: 'none',
-              color: '#fff',
+              background: '#163791',
+              border: '2px solid #001a62',
+              color: '#efefef',
               fontWeight: 700,
               cursor: 'pointer',
-              borderRadius: '50px',
+              borderRadius: '0',
               transition: 'all 0.3s',
-              boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
+              boxShadow: '0 5px 15px rgba(22, 55, 145, 0.4)',
+              fontFamily: "'Orbitron', sans-serif",
+              letterSpacing: '1px',
+              textTransform: 'uppercase',
+              clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-3px)';
-              e.currentTarget.style.boxShadow = '0 10px 25px rgba(131, 56, 236, 0.6)';
+              e.currentTarget.style.boxShadow = '0 10px 25px rgba(22, 55, 145, 0.6)';
+              e.currentTarget.style.background = '#001a62';
+              e.currentTarget.style.borderColor = '#163791';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 5px 15px rgba(131, 56, 236, 0.4)';
+              e.currentTarget.style.boxShadow = '0 5px 15px rgba(22, 55, 145, 0.4)';
+              e.currentTarget.style.background = '#163791';
+              e.currentTarget.style.borderColor = '#001a62';
             }}
           >
             ← Dashboard
@@ -322,12 +391,35 @@ export default function SectionContentPage() {
         {/* Content */}
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           <section style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: '30px',
+            background: '#141943',
+            borderRadius: '0',
             padding: '50px',
             marginBottom: '30px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            border: '3px solid #163791',
+            borderLeft: '8px solid #163791',
+            position: 'relative',
+            clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
           }}>
+            {/* Angular corner accents */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '0',
+              height: '0',
+              borderLeft: '20px solid transparent',
+              borderTop: '20px solid #001a62'
+            }}></div>
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '0',
+              height: '0',
+              borderRight: '20px solid transparent',
+              borderBottom: '20px solid #001a62'
+            }}></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
               {/* Topics */}
               {content.topics && content.topics.length > 0 && (
@@ -335,9 +427,11 @@ export default function SectionContentPage() {
                   <h3 style={{
                     fontSize: '24px',
                     fontWeight: 900,
-                    color: '#333',
+                    color: '#efefef',
                     marginBottom: '20px',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '2px'
                   }}>Topics Covered</h3>
                   <div style={{
                     display: 'grid',
@@ -352,40 +446,47 @@ export default function SectionContentPage() {
                           alignItems: 'flex-start',
                           gap: '15px',
                           padding: '20px',
-                          background: '#ffffff',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '25px',
+                          background: '#001e49',
+                          border: '2px solid #163791',
+                          borderRadius: '0',
                           transition: 'all 0.3s',
-                          boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)'
+                          boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)',
+                          position: 'relative',
+                          clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#8338ec';
-                          e.currentTarget.style.boxShadow = '0 10px 25px rgba(131, 56, 236, 0.2)';
+                          e.currentTarget.style.borderColor = '#001a62';
+                          e.currentTarget.style.boxShadow = '0 10px 25px rgba(22, 55, 145, 0.5)';
+                          e.currentTarget.style.background = '#141943';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
+                          e.currentTarget.style.borderColor = '#163791';
+                          e.currentTarget.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.3)';
+                          e.currentTarget.style.background = '#001e49';
                         }}
                       >
                         <div style={{
                           width: '32px',
                           height: '32px',
-                          background: 'linear-gradient(135deg, #3a86ff, #8338ec)',
-                          borderRadius: '50%',
+                          background: '#163791',
+                          borderRadius: '0',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          marginTop: '2px'
+                          marginTop: '2px',
+                          border: '2px solid #001a62',
+                          clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))'
                         }}>
-                          <svg style={{ width: '20px', height: '20px', color: '#fff' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg style={{ width: '20px', height: '20px', color: '#efefef' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
                         <span style={{
-                          color: '#333',
+                          color: '#efefef',
                           fontWeight: 700,
-                          fontSize: '16px'
+                          fontSize: '16px',
+                          fontFamily: "'Inter', sans-serif"
                         }}>{topic}</span>
                       </div>
                     ))}
@@ -399,9 +500,11 @@ export default function SectionContentPage() {
                   <h3 style={{
                     fontSize: '24px',
                     fontWeight: 900,
-                    color: '#333',
+                    color: '#efefef',
                     marginBottom: '20px',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '2px'
                   }}>Activities</h3>
                   <ul style={{ display: 'flex', flexDirection: 'column', gap: '15px', listStyle: 'none', padding: 0 }}>
                     {content.activities.map((activity: any, idx: number) => {
@@ -422,48 +525,57 @@ export default function SectionContentPage() {
                           alignItems: 'flex-start',
                           gap: '15px',
                           padding: '20px',
-                          background: '#ffffff',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '25px',
-                          boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
+                          background: '#001e49',
+                          border: '2px solid #163791',
+                          borderRadius: '0',
+                          boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)',
                           cursor: 'pointer',
-                          transition: 'all 0.4s'
+                          transition: 'all 0.4s',
+                          position: 'relative',
+                          clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-15px) rotate(2deg)';
-                          e.currentTarget.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.3)';
-                          e.currentTarget.style.borderColor = '#8338ec';
+                          e.currentTarget.style.transform = 'translateX(5px)';
+                          e.currentTarget.style.boxShadow = '0 10px 25px rgba(22, 55, 145, 0.5)';
+                          e.currentTarget.style.borderColor = '#001a62';
+                          e.currentTarget.style.background = '#141943';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0) rotate(0deg)';
-                          e.currentTarget.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
-                          e.currentTarget.style.borderColor = '#e5e7eb';
+                          e.currentTarget.style.transform = 'translateX(0)';
+                          e.currentTarget.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.3)';
+                          e.currentTarget.style.borderColor = '#163791';
+                          e.currentTarget.style.background = '#001e49';
                         }}
                       >
                         <div style={{
                           width: '32px',
                           height: '32px',
-                          background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                          borderRadius: '50%',
+                          background: '#163791',
+                          borderRadius: '0',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          marginTop: '2px'
+                          marginTop: '2px',
+                          border: '2px solid #001a62',
+                          clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))'
                         }}>
-                          <span style={{ color: '#fff', fontWeight: 900, fontSize: '20px' }}>•</span>
+                          <span style={{ color: '#efefef', fontWeight: 900, fontSize: '20px' }}>•</span>
                         </div>
                         <div style={{ flex: 1 }}>
                           <span style={{
-                            color: '#333',
+                            color: '#efefef',
                             fontWeight: 700,
-                            fontSize: '16px'
+                            fontSize: '16px',
+                            fontFamily: "'Inter', sans-serif"
                           }}>{typeof activity === 'string' ? activity : (activity as any).name || String(activity)}</span>
                           <div style={{
                             marginTop: '8px',
                             fontSize: '14px',
-                            color: '#8338ec',
-                            fontWeight: 600
+                            color: '#163791',
+                            fontWeight: 600,
+                            fontFamily: "'Orbitron', sans-serif",
+                            letterSpacing: '1px'
                           }}>Click to view details →</div>
                         </div>
                       </li>
@@ -490,39 +602,73 @@ export default function SectionContentPage() {
           {/* Quiz Button */}
           {content.hasQuiz && (
             <div style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '30px',
+              background: '#141943',
+              borderRadius: '0',
               padding: '50px',
               marginBottom: '30px',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-              textAlign: 'center'
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+              textAlign: 'center',
+              border: '3px solid #163791',
+              borderLeft: '8px solid #163791',
+              position: 'relative',
+              clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
             }}>
+              {/* Angular corner accents */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '0',
+                height: '0',
+                borderLeft: '20px solid transparent',
+                borderTop: '20px solid #001a62'
+              }}></div>
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: '0',
+                height: '0',
+                borderRight: '20px solid transparent',
+                borderBottom: '20px solid #001a62'
+              }}></div>
+              
               <h3 style={{
                 fontSize: '28px',
                 fontWeight: 900,
-                color: '#333',
+                color: '#efefef',
                 marginBottom: '20px',
-                textTransform: 'uppercase'
+                textTransform: 'uppercase',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '3px'
               }}>Ready to Test Your Knowledge?</h3>
               <p style={{
-                color: '#666',
+                color: '#efefef',
                 fontSize: '18px',
-                marginBottom: '10px'
+                marginBottom: '10px',
+                fontFamily: "'Inter', sans-serif",
+                opacity: 0.9
               }}>Complete the quiz for this section to verify your understanding.</p>
               <p style={{
                 color: '#ef4444',
                 fontSize: '16px',
                 fontWeight: 700,
-                marginBottom: '30px'
-              }}>⚠️ You must score 80% or higher to proceed to the next section</p>
+                marginBottom: '30px',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px'
+              }}>⚠️ You must score 90% or higher to proceed to the next section</p>
               {quizStatus?.passed && (
                 <div style={{
                   padding: '15px',
-                  background: '#ecfdf5',
-                  borderRadius: '15px',
+                  background: '#001e49',
+                  borderRadius: '0',
                   marginBottom: '20px',
                   color: '#10b981',
-                  fontWeight: 700
+                  fontWeight: 700,
+                  border: '2px solid #10b981',
+                  fontFamily: "'Orbitron', sans-serif",
+                  letterSpacing: '1px',
+                  clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                 }}>
                   ✓ Quiz Passed! Score: {quizStatus.score}%
                 </div>
@@ -531,25 +677,31 @@ export default function SectionContentPage() {
                 onClick={() => router.push(`/section/${section}/quiz`)}
                 style={{
                   padding: '18px 45px',
-                  background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                  border: 'none',
-                  color: '#fff',
+                  background: '#163791',
+                  border: '2px solid #001a62',
+                  color: '#efefef',
                   fontWeight: 900,
                   fontSize: '18px',
                   textTransform: 'uppercase',
                   cursor: 'pointer',
-                  borderRadius: '50px',
-                  boxShadow: '0 10px 30px rgba(131, 56, 236, 0.5)',
+                  borderRadius: '0',
+                  boxShadow: '0 10px 30px rgba(22, 55, 145, 0.5)',
                   transition: 'all 0.3s',
-                  letterSpacing: '1px'
+                  letterSpacing: '2px',
+                  fontFamily: "'Orbitron', sans-serif",
+                  clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(131, 56, 236, 0.7)';
+                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(22, 55, 145, 0.7)';
+                  e.currentTarget.style.background = '#001a62';
+                  e.currentTarget.style.borderColor = '#163791';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(131, 56, 236, 0.5)';
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(22, 55, 145, 0.5)';
+                  e.currentTarget.style.background = '#163791';
+                  e.currentTarget.style.borderColor = '#001a62';
                 }}
               >
                 {quizStatus?.passed ? 'Retake Section Quiz' : 'Take Section Quiz →'}
@@ -559,12 +711,35 @@ export default function SectionContentPage() {
 
           {/* Navigation Footer */}
           <div style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: '30px',
+            background: '#141943',
+            borderRadius: '0',
             padding: '50px',
             marginTop: '40px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            border: '3px solid #163791',
+            borderLeft: '8px solid #163791',
+            position: 'relative',
+            clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
           }}>
+            {/* Angular corner accents */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '0',
+              height: '0',
+              borderLeft: '20px solid transparent',
+              borderTop: '20px solid #001a62'
+            }}></div>
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '0',
+              height: '0',
+              borderRight: '20px solid transparent',
+              borderBottom: '20px solid #001a62'
+            }}></div>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -577,28 +752,34 @@ export default function SectionContentPage() {
                 disabled={sectionNum === 1}
                 style={{
                   padding: '18px 45px',
-                  background: '#ffffff',
-                  border: '2px solid #e5e7eb',
-                  color: '#333',
-                  borderRadius: '50px',
+                  background: '#001e49',
+                  border: '2px solid #163791',
+                  color: '#efefef',
+                  borderRadius: '0',
                   fontWeight: 900,
                   fontSize: '18px',
                   textTransform: 'uppercase',
                   cursor: sectionNum === 1 ? 'not-allowed' : 'pointer',
                   transition: 'all 0.3s',
-                  letterSpacing: '1px',
+                  letterSpacing: '2px',
                   opacity: sectionNum === 1 ? 0.5 : 1,
-                  boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)'
+                  boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)',
+                  fontFamily: "'Orbitron', sans-serif",
+                  clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                 }}
                 onMouseEnter={(e) => {
                   if (sectionNum !== 1) {
                     e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.2)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(22, 55, 145, 0.5)';
+                    e.currentTarget.style.background = '#141943';
+                    e.currentTarget.style.borderColor = '#001a62';
                   }
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.3)';
+                  e.currentTarget.style.background = '#001e49';
+                  e.currentTarget.style.borderColor = '#163791';
                 }}
               >
                 ← Previous Section
@@ -606,17 +787,19 @@ export default function SectionContentPage() {
               
               <div style={{
                 padding: '15px 30px',
-                background: 'linear-gradient(135deg, #ff006e, #8338ec)',
-                border: '4px solid #fff',
-                borderRadius: '25px',
-                boxShadow: '0 10px 25px rgba(131, 56, 236, 0.4)'
+                background: '#163791',
+                border: '3px solid #001a62',
+                borderRadius: '0',
+                boxShadow: '0 10px 25px rgba(22, 55, 145, 0.4)',
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
               }}>
                 <span style={{
-                  color: '#fff',
+                  color: '#efefef',
                   fontWeight: 900,
                   fontSize: '20px',
                   textTransform: 'uppercase',
-                  letterSpacing: '1px'
+                  letterSpacing: '2px',
+                  fontFamily: "'Orbitron', sans-serif"
                 }}>Section {sectionNum} of {totalSections}</span>
               </div>
 
@@ -637,28 +820,46 @@ export default function SectionContentPage() {
                 disabled={sectionNum === totalSections && content.hasQuiz && !quizStatus?.passed}
                 style={{
                   padding: '18px 45px',
-                  background: sectionNum === totalSections ? 'linear-gradient(135deg, #10b981, #3a86ff)' : 'linear-gradient(135deg, #ff006e, #8338ec)',
-                  border: 'none',
-                  color: '#fff',
+                  background: sectionNum === totalSections ? '#10b981' : '#163791',
+                  border: `2px solid ${sectionNum === totalSections ? '#059669' : '#001a62'}`,
+                  color: '#efefef',
                   fontWeight: 900,
                   fontSize: '18px',
                   textTransform: 'uppercase',
                   cursor: (sectionNum === totalSections && content.hasQuiz && !quizStatus?.passed) ? 'not-allowed' : 'pointer',
-                  borderRadius: '50px',
-                  boxShadow: '0 10px 30px rgba(131, 56, 236, 0.5)',
+                  borderRadius: '0',
+                  boxShadow: '0 10px 30px rgba(22, 55, 145, 0.5)',
+                  fontFamily: "'Orbitron', sans-serif",
+                  letterSpacing: '2px',
+                  clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
                   transition: 'all 0.3s',
-                  letterSpacing: '1px',
                   opacity: (sectionNum === totalSections && content.hasQuiz && !quizStatus?.passed) ? 0.5 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (!(sectionNum === totalSections && content.hasQuiz && !quizStatus?.passed)) {
                     e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                    e.currentTarget.style.boxShadow = '0 15px 40px rgba(131, 56, 236, 0.7)';
+                    if (sectionNum === totalSections) {
+                      e.currentTarget.style.boxShadow = '0 15px 40px rgba(16, 185, 129, 0.7)';
+                      e.currentTarget.style.background = '#059669';
+                      e.currentTarget.style.borderColor = '#10b981';
+                    } else {
+                      e.currentTarget.style.boxShadow = '0 15px 40px rgba(22, 55, 145, 0.7)';
+                      e.currentTarget.style.background = '#001a62';
+                      e.currentTarget.style.borderColor = '#163791';
+                    }
                   }
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(131, 56, 236, 0.5)';
+                  if (sectionNum === totalSections) {
+                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(16, 185, 129, 0.5)';
+                    e.currentTarget.style.background = '#10b981';
+                    e.currentTarget.style.borderColor = '#059669';
+                  } else {
+                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(22, 55, 145, 0.5)';
+                    e.currentTarget.style.background = '#163791';
+                    e.currentTarget.style.borderColor = '#001a62';
+                  }
                 }}
               >
                 {sectionNum === totalSections ? 'Take Final Quiz →' : 'Next Section →'}

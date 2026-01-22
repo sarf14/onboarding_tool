@@ -1,5 +1,6 @@
 // Quiz cleanup service - deletes quiz results older than 1 day
 import { supabase } from '../config/database';
+import { getISTDate, getISTDateDaysAgo } from '../utils/date';
 
 class QuizCleanupService {
   private cleanupInterval: NodeJS.Timeout | null = null;
@@ -27,9 +28,7 @@ class QuizCleanupService {
 
   private async cleanup() {
     try {
-      const oneDayAgo = new Date();
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-      const oneDayAgoISO = oneDayAgo.toISOString();
+      const oneDayAgoISO = getISTDateDaysAgo(1);
       
       // Delete all quizzes completed more than 1 day ago
       const { error } = await supabase
@@ -42,7 +41,7 @@ class QuizCleanupService {
         return;
       }
 
-      console.log(`✅ Quiz cleanup completed at ${new Date().toISOString()} - deleted quizzes older than 1 day`);
+      console.log(`✅ Quiz cleanup completed at ${getISTDate()} - deleted quizzes older than 1 day`);
     } catch (error) {
       console.error('❌ Quiz cleanup failed:', error);
     }

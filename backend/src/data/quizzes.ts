@@ -831,10 +831,10 @@ export const quizzes = {
         options: [
           "Information Hallucination (text)",
           "Tool Error",
-          "Dissatisfactory output"
+          "Dissatisfactory Output"
         ],
-        correctAnswer: 0,
-        explanation: "This is Information Hallucination (text) - the model adds information that wasn't in the source data, inventing details in the text output."
+        correctAnswer: 2,
+        explanation: "Dissatisfactory Output - When the model adds extra unsupported details to correct data in the final response, the output doesn't meet requirements, making it a Dissatisfactory Output."
       },
       {
         id: 10,
@@ -855,8 +855,8 @@ export const quizzes = {
           "Yes",
           "No"
         ],
-        correctAnswer: 0,
-        explanation: "Yes - Task Status and Trajectory Status are independent. A task can succeed (correct output) even if the trajectory had errors (flawed process that was corrected or didn't affect outcome)."
+        correctAnswer: 1,
+        explanation: "No - If Task Status is 'Success', then Trajectory Status must also be 'Success'. Trajectory Status evaluates the process, and if the task succeeded, the trajectory was successful."
       },
       {
         id: 12,
@@ -932,8 +932,8 @@ export const quizzes = {
           "Information Hallucination(text)",
           "Dissatisfactory Output"
         ],
-        correctAnswer: 0,
-        explanation: "Information Hallucination (text) - If the hallucination appears only in the final step and wasn't present in earlier steps, it's the model adding unsupported information in the output, which is Info Hallucination (text)."
+        correctAnswer: 1,
+        explanation: "Dissatisfactory Output - If a hallucination appears only in the final step and affects the output quality, it should be classified as Dissatisfactory Output since the final response doesn't meet requirements."
       },
       {
         id: 19,
@@ -944,19 +944,8 @@ export const quizzes = {
           "Early Stopping (Premature Task Satisfaction)",
           "Early Stopping (Insufficient Persistence)"
         ],
-        correctAnswer: 0,
-        explanation: "Information Hallucination (Text) can occur in the output step when the model adds unsupported details. Tool Errors occur during tool calls, and Early Stopping occurs before the output step."
-      },
-      {
-        id: 20,
-        question: "Under which Error Category should this be classified? (Captionless Image)",
-        options: [
-          "UI Grounding",
-          "UI Hallucination",
-          "UI Misunderstanding"
-        ],
-        correctAnswer: 0,
-        explanation: "UI Grounding - When a model misinterprets or misunderstands a UI element (like a captionless image), it's a UI Grounding error - the model grounded its understanding incorrectly on the visual element."
+        correctAnswer: [2, 3], // Multiple correct answers
+        explanation: "Early Stopping (Premature Task Satisfaction) and Early Stopping (Insufficient Persistence) can occur in the output step when the model stops too early or doesn't persist enough. Information Hallucination (Text) can also occur, but Early Stopping is specifically an output step error."
       },
       {
         id: 21,

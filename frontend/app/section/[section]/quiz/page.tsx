@@ -21,7 +21,7 @@ export default function QuizPage() {
   const section = params.section as string;
   const { token } = useAuthStore();
   const [quizData, setQuizData] = useState<any>(null);
-  const [answers, setAnswers] = useState<{ [key: number]: number }>({});
+  const [answers, setAnswers] = useState<{ [key: number]: number | number[] }>({});
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,14 +70,39 @@ export default function QuizPage() {
             
             questions.forEach((q: any) => {
               const userShuffledAnswer = answers[q.id];
-              const userOriginalAnswer = userShuffledAnswer !== undefined 
-                ? shuffledQuestions[q.id]?.shuffledToOriginal[userShuffledAnswer] ?? -1
-                : -1;
+              const correctAnswer = q.correctAnswer;
+              const isMultiSelect = Array.isArray(correctAnswer);
               
-              answerArray.push(userOriginalAnswer !== undefined ? userOriginalAnswer : -1);
-              
-              if (userOriginalAnswer === q.correctAnswer) {
-                correct++;
+              if (isMultiSelect) {
+                // Multi-select question - user must select ALL correct answers
+                const userSelectedAnswers = Array.isArray(userShuffledAnswer) 
+                  ? userShuffledAnswer.map((shuffledIdx: number) => 
+                      shuffledQuestions[q.id]?.shuffledToOriginal[shuffledIdx] ?? -1
+                    ).filter((idx: number) => idx !== -1)
+                  : [];
+                
+                const correctAnswersSet = new Set(correctAnswer);
+                const userAnswersSet = new Set(userSelectedAnswers);
+                
+                if (correctAnswersSet.size === userAnswersSet.size && 
+                    correctAnswer.every((ans: number) => userAnswersSet.has(ans))) {
+                  correct++;
+                }
+                
+                answerArray.push(userSelectedAnswers.length > 0 ? userSelectedAnswers : [-1]);
+              } else {
+                // Single select question
+                const userOriginalAnswer = userShuffledAnswer !== undefined 
+                  ? (typeof userShuffledAnswer === 'number' 
+                      ? shuffledQuestions[q.id]?.shuffledToOriginal[userShuffledAnswer] ?? -1
+                      : -1)
+                  : -1;
+                
+                answerArray.push(userOriginalAnswer !== undefined && userOriginalAnswer !== -1 ? userOriginalAnswer : -1);
+                
+                if (userOriginalAnswer === correctAnswer) {
+                  correct++;
+                }
               }
             });
             
@@ -170,9 +195,25 @@ export default function QuizPage() {
     }
   };
 
-  const handleAnswerSelect = (questionId: number, answerIndex: number) => {
+  const handleAnswerSelect = (questionId: number, answerIndex: number, isMultiSelect: boolean = false) => {
     if (showResults) return;
-    setAnswers({ ...answers, [questionId]: answerIndex });
+    
+    if (isMultiSelect) {
+      // Toggle selection for multi-select questions
+      const currentAnswer = answers[questionId];
+      const selectedAnswers = Array.isArray(currentAnswer) ? currentAnswer : [];
+      
+      if (selectedAnswers.includes(answerIndex)) {
+        // Deselect if already selected
+        setAnswers({ ...answers, [questionId]: selectedAnswers.filter((idx: number) => idx !== answerIndex) });
+      } else {
+        // Select if not selected
+        setAnswers({ ...answers, [questionId]: [...selectedAnswers, answerIndex] });
+      }
+    } else {
+      // Single select
+      setAnswers({ ...answers, [questionId]: answerIndex });
+    }
   };
 
   const handleSubmit = async () => {
@@ -184,16 +225,42 @@ export default function QuizPage() {
     
     questions.forEach((q: any) => {
       const userShuffledAnswer = answers[q.id];
-      // Convert shuffled answer index back to original index
-      const userOriginalAnswer = userShuffledAnswer !== undefined 
-        ? shuffledQuestions[q.id]?.shuffledToOriginal[userShuffledAnswer] ?? -1
-        : -1;
+      const correctAnswer = q.correctAnswer;
+      const isMultiSelect = Array.isArray(correctAnswer);
       
-      answerArray.push(userOriginalAnswer !== undefined ? userOriginalAnswer : -1);
-      
-      // Compare with original correctAnswer index
-      if (userOriginalAnswer === q.correctAnswer) {
-        correct++;
+      if (isMultiSelect) {
+        // Multi-select question - user must select ALL correct answers
+        const userSelectedAnswers = Array.isArray(userShuffledAnswer) 
+          ? userShuffledAnswer.map((shuffledIdx: number) => 
+              shuffledQuestions[q.id]?.shuffledToOriginal[shuffledIdx] ?? -1
+            ).filter((idx: number) => idx !== -1)
+          : [];
+        
+        // Check if user selected exactly the correct answers (same length and all match)
+        const correctAnswersSet = new Set(correctAnswer);
+        const userAnswersSet = new Set(userSelectedAnswers);
+        
+        if (correctAnswersSet.size === userAnswersSet.size && 
+            correctAnswer.every((ans: number) => userAnswersSet.has(ans))) {
+          correct++;
+        }
+        
+        // Store as array for multi-select
+        answerArray.push(userSelectedAnswers.length > 0 ? userSelectedAnswers : [-1]);
+      } else {
+        // Single select question
+        const userOriginalAnswer = userShuffledAnswer !== undefined 
+          ? (typeof userShuffledAnswer === 'number' 
+              ? shuffledQuestions[q.id]?.shuffledToOriginal[userShuffledAnswer] ?? -1
+              : -1)
+          : -1;
+        
+        answerArray.push(userOriginalAnswer !== undefined && userOriginalAnswer !== -1 ? userOriginalAnswer : -1);
+        
+        // Single correct answer
+        if (userOriginalAnswer === correctAnswer) {
+          correct++;
+        }
       }
     });
     
@@ -254,23 +321,34 @@ export default function QuizPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#000000',
+        background: '#001e49',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Inter', sans-serif",
+        position: 'relative'
       }}>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
             width: '64px',
             height: '64px',
-            border: '4px solid rgba(255, 255, 255, 0.3)',
-            borderTopColor: '#ffffff',
-            borderRadius: '50%',
+            border: '4px solid #141943',
+            borderTopColor: '#163791',
+            borderRadius: '0',
+            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
             animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
+            margin: '0 auto 20px',
+            borderRightColor: '#001a62',
+            borderBottomColor: '#001a62',
+            borderLeftColor: '#001a62'
           }}></div>
-          <p style={{ color: '#ffffff', fontSize: '20px', fontWeight: 700 }}>Loading quiz...</p>
+          <p style={{ 
+            color: '#efefef', 
+            fontSize: '20px', 
+            fontWeight: 700,
+            fontFamily: "'Orbitron', sans-serif",
+            letterSpacing: '2px'
+          }}>Loading quiz...</p>
         </div>
       </div>
     );
@@ -280,7 +358,7 @@ export default function QuizPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#000000',
+        background: '#001e49',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -289,11 +367,35 @@ export default function QuizPage() {
       }}>
         <div style={{
           maxWidth: '600px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '25px',
+          background: '#141943',
+          borderRadius: '0',
           padding: '40px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
         }}>
+          {/* Angular corner accents */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '20px solid transparent',
+            borderTop: '20px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '20px solid transparent',
+            borderBottom: '20px solid #001a62'
+          }}></div>
+          
           <div style={{
             fontSize: '48px',
             textAlign: 'center',
@@ -304,18 +406,22 @@ export default function QuizPage() {
             fontWeight: 900,
             color: '#ef4444',
             marginBottom: '20px',
-            textAlign: 'center'
+            textAlign: 'center',
+            fontFamily: "'Orbitron', sans-serif",
+            letterSpacing: '2px',
+            textTransform: 'uppercase'
           }}>Error Loading Quiz</h2>
           <div style={{
             fontSize: '16px',
-            color: '#333',
+            color: '#efefef',
             lineHeight: 1.6,
             whiteSpace: 'pre-line',
             marginBottom: '30px',
-            background: '#f9fafb',
+            background: '#001e49',
             padding: '20px',
-            borderRadius: '15px',
-            border: '2px solid #e5e7eb'
+            borderRadius: '0',
+            border: '2px solid #163791',
+            fontFamily: "'Inter', sans-serif"
           }}>{error}</div>
           <div style={{
             display: 'flex',
@@ -331,13 +437,28 @@ export default function QuizPage() {
               }}
               style={{
                 padding: '12px 28px',
-                background: 'linear-gradient(135deg, #007BFF, #0056B3)',
-                border: 'none',
-                color: '#fff',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: 'pointer',
-                borderRadius: '50px',
-                fontSize: '16px'
+                borderRadius: '0',
+                fontSize: '16px',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
               Retry
@@ -352,13 +473,28 @@ export default function QuizPage() {
               }}
               style={{
                 padding: '12px 28px',
-                background: '#e5e7eb',
-                border: 'none',
-                color: '#333',
+                background: '#001e49',
+                border: '2px solid #163791',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: 'pointer',
-                borderRadius: '50px',
-                fontSize: '16px'
+                borderRadius: '0',
+                fontSize: '16px',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#141943';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#001e49';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
               Go Back
@@ -379,20 +515,44 @@ export default function QuizPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#000000',
+      background: '#001e49',
       fontFamily: "'Inter', sans-serif",
-      color: '#ffffff',
-      padding: '40px 20px'
+      color: '#efefef',
+      padding: '40px 20px',
+      position: 'relative'
     }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '25px',
+          background: '#141943',
+          borderRadius: '0',
           padding: '30px 40px',
           marginBottom: '30px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
         }}>
+          {/* Angular corner accents */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '20px solid transparent',
+            borderTop: '20px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '20px solid transparent',
+            borderBottom: '20px solid #001a62'
+          }}></div>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -404,18 +564,20 @@ export default function QuizPage() {
               <h1 style={{
                 fontSize: '36px',
                 fontWeight: 900,
-                background: 'linear-gradient(135deg, #007BFF, #0056B3)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                color: '#efefef',
                 textTransform: 'uppercase',
                 letterSpacing: '3px',
-                marginBottom: '10px'
+                marginBottom: '10px',
+                fontFamily: "'Orbitron', sans-serif"
               }}>{section === 'final' ? 'Final Comprehensive Quiz' : `Section ${section} Quiz`}</h1>
               <p style={{
-                fontSize: '24px',
-                fontWeight: 700,
-                color: '#333',
-                textTransform: 'uppercase'
+                fontSize: '20px',
+                fontWeight: 600,
+                color: '#efefef',
+                textTransform: 'uppercase',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '2px',
+                opacity: 0.9
               }}>{quizData.quiz?.title || 'Quiz'}</p>
             </div>
             {/* Timer Display */}
@@ -423,16 +585,20 @@ export default function QuizPage() {
               <div style={{
                 padding: '15px 25px',
                 background: timeRemaining < 300 
-                  ? 'linear-gradient(135deg, #ef4444, #dc2626)' 
-                  : 'linear-gradient(135deg, #007BFF, #0056B3)',
-                borderRadius: '15px',
-                color: '#fff',
-                fontWeight: 700,
+                  ? '#ef4444' 
+                  : '#163791',
+                borderRadius: '0',
+                color: '#efefef',
+                fontWeight: 900,
                 fontSize: '20px',
                 minWidth: '120px',
                 textAlign: 'center',
-                boxShadow: timeRemaining < 300 ? '0 5px 20px rgba(239, 68, 68, 0.5)' : '0 5px 15px rgba(0, 123, 255, 0.4)',
-                animation: timeRemaining < 60 ? 'pulse 1s infinite' : 'none'
+                border: `2px solid ${timeRemaining < 300 ? '#dc2626' : '#001a62'}`,
+                boxShadow: timeRemaining < 300 ? '0 5px 20px rgba(239, 68, 68, 0.5)' : '0 5px 15px rgba(22, 55, 145, 0.4)',
+                animation: timeRemaining < 60 ? 'pulse 1s infinite' : 'none',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
               }}>
                 ⏱️ {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
               </div>
@@ -447,22 +613,30 @@ export default function QuizPage() {
               }}
               style={{
                 padding: '12px 28px',
-                background: 'linear-gradient(135deg, #007BFF, #0056B3)',
-                border: 'none',
-                color: '#fff',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
                 fontWeight: 700,
                 cursor: 'pointer',
-                borderRadius: '50px',
+                borderRadius: '0',
                 transition: 'all 0.3s',
-                boxShadow: '0 5px 15px rgba(131, 56, 236, 0.4)'
+                boxShadow: '0 5px 15px rgba(22, 55, 145, 0.4)',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = '0 10px 25px rgba(131, 56, 236, 0.6)';
+                e.currentTarget.style.boxShadow = '0 10px 25px rgba(22, 55, 145, 0.6)';
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 5px 15px rgba(131, 56, 236, 0.4)';
+                e.currentTarget.style.boxShadow = '0 5px 15px rgba(22, 55, 145, 0.4)';
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
               }}
             >
               ← Back to Section
@@ -472,134 +646,288 @@ export default function QuizPage() {
 
         {/* Quiz Content */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '30px',
+          background: '#141943',
+          borderRadius: '0',
           padding: '50px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+          border: '3px solid #163791',
+          borderLeft: '8px solid #163791',
+          position: 'relative',
+          clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
         }}>
+          {/* Angular corner accents */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '0',
+            height: '0',
+            borderLeft: '20px solid transparent',
+            borderTop: '20px solid #001a62'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '0',
+            height: '0',
+            borderRight: '20px solid transparent',
+            borderBottom: '20px solid #001a62'
+          }}></div>
           {!showResults ? (
             <>
-              {quizData.quiz?.questions?.map((question: any, idx: number) => (
+              {quizData.quiz?.questions?.map((question: any, idx: number) => {
+                const isMultiSelect = Array.isArray(question.correctAnswer);
+                const selectedAnswers = Array.isArray(answers[question.id]) 
+                  ? answers[question.id] as number[]
+                  : answers[question.id] !== undefined 
+                    ? [answers[question.id] as number]
+                    : [];
+                
+                return (
                 <div
                   key={question.id}
                   style={{
                     marginBottom: '40px',
                     padding: '30px',
-                    background: '#ffffff',
-                    borderRadius: '25px',
-                    border: '2px solid #e5e7eb',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)'
+                    background: '#001e49',
+                    borderRadius: '0',
+                    border: '2px solid #163791',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                    position: 'relative',
+                    clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                   }}
                 >
                   <div style={{
-                    fontSize: '20px',
+                    fontSize: '18px',
                     fontWeight: 900,
-                    color: '#333',
+                    color: '#efefef',
                     marginBottom: '20px',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '2px'
                   }}>
                     Question {idx + 1} of {totalQuestions}
+                    {isMultiSelect && (
+                      <span style={{
+                        fontSize: '14px',
+                        marginLeft: '15px',
+                        color: '#163791',
+                        fontWeight: 600
+                      }}>(Select all that apply)</span>
+                    )}
                   </div>
                   <h3 style={{
-                    fontSize: '22px',
+                    fontSize: '20px',
                     fontWeight: 700,
-                    color: '#333',
+                    color: '#efefef',
                     marginBottom: '25px',
-                    lineHeight: 1.4
+                    lineHeight: 1.4,
+                    fontFamily: "'Inter', sans-serif"
                   }}>{question.question}</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     {(shuffledQuestions[question.id]?.shuffledOptions || question.options).map((option: string, optIdx: number) => {
                       // Normalize option display - make all buttons same height to prevent length-based guessing
                       const minHeight = '80px';
+                      const isSelected = isMultiSelect 
+                        ? selectedAnswers.includes(optIdx)
+                        : answers[question.id] === optIdx;
+                      
                       return (
                         <button
                           key={optIdx}
-                          onClick={() => !timeUp && handleAnswerSelect(question.id, optIdx)}
+                          onClick={() => !timeUp && handleAnswerSelect(question.id, optIdx, isMultiSelect)}
                           disabled={timeUp}
                           style={{
                             padding: '20px 25px',
                             minHeight: minHeight,
                             display: 'flex',
                             alignItems: 'center',
-                            background: answers[question.id] === optIdx
-                              ? 'linear-gradient(135deg, #007BFF, #0056B3)'
-                              : '#f9fafb',
-                            color: answers[question.id] === optIdx ? '#fff' : '#333',
-                            border: `2px solid ${answers[question.id] === optIdx ? '#007BFF' : '#e5e7eb'}`,
-                            borderRadius: '20px',
+                            gap: '15px',
+                            background: isSelected
+                              ? '#163791'
+                              : '#001e49',
+                            color: '#efefef',
+                            border: `2px solid ${isSelected ? '#001a62' : '#163791'}`,
+                            borderRadius: '0',
                             cursor: timeUp ? 'not-allowed' : 'pointer',
                             transition: 'all 0.3s',
                             textAlign: 'left',
-                            fontWeight: answers[question.id] === optIdx ? 700 : 500,
+                            fontWeight: isSelected ? 700 : 500,
                             fontSize: '16px',
                             lineHeight: '1.5',
-                            boxShadow: answers[question.id] === optIdx
-                              ? '0 10px 25px rgba(131, 56, 236, 0.3)'
-                              : '0 5px 15px rgba(0, 0, 0, 0.1)',
+                            boxShadow: isSelected
+                              ? '0 10px 25px rgba(22, 55, 145, 0.5)'
+                              : '0 5px 15px rgba(0, 0, 0, 0.2)',
                             opacity: timeUp ? 0.6 : 1,
-                            width: '100%'
+                            width: '100%',
+                            fontFamily: "'Inter', sans-serif",
+                            clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                           }}
                           onMouseEnter={(e) => {
-                            if (!timeUp && answers[question.id] !== optIdx) {
-                              e.currentTarget.style.background = '#f3f4f6';
-                              e.currentTarget.style.borderColor = '#007BFF';
+                            if (!timeUp && !isSelected) {
+                              e.currentTarget.style.background = '#141943';
+                              e.currentTarget.style.borderColor = '#001a62';
+                              e.currentTarget.style.transform = 'translateX(5px)';
                             }
                           }}
                           onMouseLeave={(e) => {
-                            if (!timeUp && answers[question.id] !== optIdx) {
-                              e.currentTarget.style.background = '#f9fafb';
-                              e.currentTarget.style.borderColor = '#e5e7eb';
+                            if (!timeUp && !isSelected) {
+                              e.currentTarget.style.background = '#001e49';
+                              e.currentTarget.style.borderColor = '#163791';
+                              e.currentTarget.style.transform = 'translateX(0)';
                             }
                           }}
                         >
-                          {option}
+                          {/* Checkbox indicator for multi-select */}
+                          {isMultiSelect && (
+                            <div style={{
+                              width: '24px',
+                              height: '24px',
+                              border: `2px solid ${isSelected ? '#001a62' : '#163791'}`,
+                              borderRadius: '0',
+                              background: isSelected ? '#001a62' : 'transparent',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))'
+                            }}>
+                              {isSelected && (
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#efefef" strokeWidth="3">
+                                  <path d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          )}
+                          <span style={{ flex: 1 }}>{option}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
-              ))}
+              );
+              })}
 
               <div style={{
                 display: 'flex',
                 justifyContent: 'center',
                 marginTop: '40px',
                 paddingTop: '30px',
-                borderTop: '2px solid #e5e7eb'
+                borderTop: '2px solid #163791'
               }}>
                 <button
                   onClick={handleSubmit}
-                  disabled={Object.keys(answers).length < totalQuestions && !timeUp}
+                  disabled={(() => {
+                    // Check if all questions are answered
+                    const allAnswered = quizData.quiz?.questions?.every((q: any) => {
+                      const answer = answers[q.id];
+                      if (Array.isArray(q.correctAnswer)) {
+                        // Multi-select: must have at least one answer
+                        return Array.isArray(answer) ? answer.length > 0 : false;
+                      } else {
+                        // Single select: must have an answer
+                        return answer !== undefined;
+                      }
+                    });
+                    return !allAnswered && !timeUp;
+                  })()}
                   style={{
                     padding: '18px 45px',
-                    background: (Object.keys(answers).length < totalQuestions && !timeUp)
-                      ? '#e5e7eb'
-                      : 'linear-gradient(135deg, #007BFF, #0056B3)',
-                    border: 'none',
-                    color: (Object.keys(answers).length < totalQuestions && !timeUp) ? '#999' : '#fff',
+                    background: (() => {
+                      const allAnswered = quizData.quiz?.questions?.every((q: any) => {
+                        const answer = answers[q.id];
+                        if (Array.isArray(q.correctAnswer)) {
+                          return Array.isArray(answer) ? answer.length > 0 : false;
+                        } else {
+                          return answer !== undefined;
+                        }
+                      });
+                      return (!allAnswered && !timeUp) ? '#141943' : '#163791';
+                    })(),
+                    border: `2px solid ${(() => {
+                      const allAnswered = quizData.quiz?.questions?.every((q: any) => {
+                        const answer = answers[q.id];
+                        if (Array.isArray(q.correctAnswer)) {
+                          return Array.isArray(answer) ? answer.length > 0 : false;
+                        } else {
+                          return answer !== undefined;
+                        }
+                      });
+                      return (!allAnswered && !timeUp) ? '#163791' : '#001a62';
+                    })()}`,
+                    color: '#efefef',
                     fontWeight: 900,
                     fontSize: '18px',
                     textTransform: 'uppercase',
-                    cursor: (Object.keys(answers).length < totalQuestions && !timeUp) ? 'not-allowed' : 'pointer',
-                    borderRadius: '50px',
-                    boxShadow: (Object.keys(answers).length < totalQuestions && !timeUp)
-                      ? 'none'
-                      : '0 10px 30px rgba(131, 56, 236, 0.5)',
+                    cursor: (() => {
+                      const allAnswered = quizData.quiz?.questions?.every((q: any) => {
+                        const answer = answers[q.id];
+                        if (Array.isArray(q.correctAnswer)) {
+                          return Array.isArray(answer) ? answer.length > 0 : false;
+                        } else {
+                          return answer !== undefined;
+                        }
+                      });
+                      return (!allAnswered && !timeUp) ? 'not-allowed' : 'pointer';
+                    })(),
+                    borderRadius: '0',
+                    boxShadow: (() => {
+                      const allAnswered = quizData.quiz?.questions?.every((q: any) => {
+                        const answer = answers[q.id];
+                        if (Array.isArray(q.correctAnswer)) {
+                          return Array.isArray(answer) ? answer.length > 0 : false;
+                        } else {
+                          return answer !== undefined;
+                        }
+                      });
+                      return (!allAnswered && !timeUp) ? 'none' : '0 10px 30px rgba(22, 55, 145, 0.5)';
+                    })(),
                     transition: 'all 0.3s',
-                    letterSpacing: '1px',
-                    opacity: (Object.keys(answers).length < totalQuestions && !timeUp) ? 0.5 : 1
+                    letterSpacing: '2px',
+                    opacity: (() => {
+                      const allAnswered = quizData.quiz?.questions?.every((q: any) => {
+                        const answer = answers[q.id];
+                        if (Array.isArray(q.correctAnswer)) {
+                          return Array.isArray(answer) ? answer.length > 0 : false;
+                        } else {
+                          return answer !== undefined;
+                        }
+                      });
+                      return (!allAnswered && !timeUp) ? 0.5 : 1;
+                    })(),
+                    fontFamily: "'Orbitron', sans-serif",
+                    clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                   }}
                   onMouseEnter={(e) => {
-                    if (Object.keys(answers).length >= totalQuestions) {
+                    const allAnswered = quizData.quiz?.questions?.every((q: any) => {
+                      const answer = answers[q.id];
+                      if (Array.isArray(q.correctAnswer)) {
+                        return Array.isArray(answer) ? answer.length > 0 : false;
+                      } else {
+                        return answer !== undefined;
+                      }
+                    });
+                    if (allAnswered) {
                       e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 15px 40px rgba(131, 56, 236, 0.7)';
+                      e.currentTarget.style.boxShadow = '0 15px 40px rgba(22, 55, 145, 0.7)';
+                      e.currentTarget.style.background = '#001a62';
+                      e.currentTarget.style.borderColor = '#163791';
                     }
                   }}
                   onMouseLeave={(e) => {
+                    const allAnswered = quizData.quiz?.questions?.every((q: any) => {
+                      const answer = answers[q.id];
+                      if (Array.isArray(q.correctAnswer)) {
+                        return Array.isArray(answer) ? answer.length > 0 : false;
+                      } else {
+                        return answer !== undefined;
+                      }
+                    });
                     e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = Object.keys(answers).length < totalQuestions
-                      ? 'none'
-                      : '0 10px 30px rgba(131, 56, 236, 0.5)';
+                    e.currentTarget.style.boxShadow = !allAnswered ? 'none' : '0 10px 30px rgba(22, 55, 145, 0.5)';
+                    e.currentTarget.style.background = !allAnswered ? '#141943' : '#163791';
+                    e.currentTarget.style.borderColor = !allAnswered ? '#163791' : '#001a62';
                   }}
                 >
                   Submit Quiz
@@ -613,24 +941,54 @@ export default function QuizPage() {
                 textAlign: 'center',
                 marginBottom: '40px',
                 padding: '40px',
-                background: 'linear-gradient(135deg, #007BFF, #0056B3)',
-                borderRadius: '25px',
-                color: '#fff'
+                background: percentage >= 90 ? '#163791' : '#ef4444',
+                borderRadius: '0',
+                color: '#efefef',
+                border: `3px solid ${percentage >= 90 ? '#001a62' : '#dc2626'}`,
+                borderLeft: `8px solid ${percentage >= 90 ? '#001a62' : '#dc2626'}`,
+                position: 'relative',
+                clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))'
               }}>
+                {/* Angular corner accents */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '0',
+                  height: '0',
+                  borderLeft: '20px solid transparent',
+                  borderTop: `20px solid ${percentage >= 90 ? '#001a62' : '#dc2626'}`
+                }}></div>
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: '0',
+                  height: '0',
+                  borderRight: '20px solid transparent',
+                  borderBottom: `20px solid ${percentage >= 90 ? '#001a62' : '#dc2626'}`
+                }}></div>
+                
                 <div style={{
                   fontSize: '72px',
                   fontWeight: 900,
-                  marginBottom: '20px'
+                  marginBottom: '20px',
+                  fontFamily: "'Orbitron', sans-serif",
+                  letterSpacing: '4px'
                 }}>{percentage}%</div>
                 <div style={{
                   fontSize: '28px',
                   fontWeight: 700,
-                  marginBottom: '10px'
+                  marginBottom: '10px',
+                  fontFamily: "'Orbitron', sans-serif",
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase'
                 }}>You scored {score} out of {totalQuestions}</div>
                 <div style={{
                   fontSize: '18px',
                   opacity: 0.9,
-                  marginBottom: percentage >= 80 ? '0' : '20px'
+                  marginBottom: percentage >= 90 ? '0' : '20px',
+                  fontFamily: "'Inter', sans-serif"
                 }}>
                   {percentage >= 90 ? 'Excellent! You have a strong understanding of this section. You can now proceed to the next section.' :
                    'You need at least 90% to pass this quiz. Your score: ' + percentage + '%. Please review the section content and try again.'}
@@ -639,11 +997,14 @@ export default function QuizPage() {
                   <div style={{
                     marginTop: '20px',
                     padding: '15px',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    borderRadius: '15px',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    borderRadius: '0',
                     border: '2px solid #ef4444',
-                    color: '#ef4444',
-                    fontWeight: 700
+                    color: '#efefef',
+                    fontWeight: 700,
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '1px',
+                    clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                   }}>
                     ⚠️ Score Required: 90% | Your Score: {percentage}% | Please retake the quiz
                   </div>
@@ -652,11 +1013,14 @@ export default function QuizPage() {
                   <div style={{
                     marginTop: '20px',
                     padding: '15px',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    borderRadius: '15px',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    borderRadius: '0',
                     border: '2px solid #ef4444',
-                    color: '#ef4444',
-                    fontWeight: 700
+                    color: '#efefef',
+                    fontWeight: 700,
+                    fontFamily: "'Orbitron', sans-serif",
+                    letterSpacing: '1px',
+                    clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                   }}>
                     ⏱️ Time's Up! Quiz was auto-submitted.
                   </div>
@@ -669,17 +1033,43 @@ export default function QuizPage() {
                 <h3 style={{
                   fontSize: '28px',
                   fontWeight: 900,
-                  color: '#333',
+                  color: '#efefef',
                   marginBottom: '30px',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  fontFamily: "'Orbitron', sans-serif",
+                  letterSpacing: '3px'
                 }}>Review Your Answers</h3>
                 {quizData.quiz?.questions?.map((question: any, idx: number) => {
                   const userShuffledAnswer = answers[question.id];
-                  // Convert shuffled answer back to original index for comparison
-                  const userOriginalAnswer = userShuffledAnswer !== undefined 
-                    ? shuffledQuestions[question.id]?.shuffledToOriginal[userShuffledAnswer] ?? -1
-                    : -1;
-                  const isCorrect = userOriginalAnswer === question.correctAnswer;
+                  const correctAnswer = question.correctAnswer;
+                  const isMultiSelect = Array.isArray(correctAnswer);
+                  
+                  let isCorrect = false;
+                  let userOriginalAnswer: number | number[] = -1;
+                  
+                  if (isMultiSelect) {
+                    // Multi-select: check if user selected ALL correct answers
+                    const userSelectedAnswers = Array.isArray(userShuffledAnswer) 
+                      ? userShuffledAnswer.map((shuffledIdx: number) => 
+                          shuffledQuestions[question.id]?.shuffledToOriginal[shuffledIdx] ?? -1
+                        ).filter((idx: number) => idx !== -1)
+                      : [];
+                    
+                    const correctAnswersSet = new Set(correctAnswer);
+                    const userAnswersSet = new Set(userSelectedAnswers);
+                    
+                    isCorrect = correctAnswersSet.size === userAnswersSet.size && 
+                                correctAnswer.every((ans: number) => userAnswersSet.has(ans));
+                    userOriginalAnswer = userSelectedAnswers;
+                  } else {
+                    // Single select
+                    userOriginalAnswer = userShuffledAnswer !== undefined 
+                      ? (typeof userShuffledAnswer === 'number' 
+                          ? shuffledQuestions[question.id]?.shuffledToOriginal[userShuffledAnswer] ?? -1
+                          : -1)
+                      : -1;
+                    isCorrect = userOriginalAnswer === correctAnswer;
+                  }
                   
                   return (
                     <div
@@ -687,10 +1077,12 @@ export default function QuizPage() {
                       style={{
                         marginBottom: '30px',
                         padding: '30px',
-                        background: '#ffffff',
-                        borderRadius: '25px',
+                        background: '#001e49',
+                        borderRadius: '0',
                         border: `2px solid ${isCorrect ? '#10b981' : '#ef4444'}`,
-                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)'
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                        position: 'relative',
+                        clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                       }}
                     >
                       <div style={{
@@ -702,43 +1094,53 @@ export default function QuizPage() {
                         <div style={{
                           width: '40px',
                           height: '40px',
-                          borderRadius: '50%',
+                          borderRadius: '0',
                           background: isCorrect ? '#10b981' : '#ef4444',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: '#fff',
+                          color: '#efefef',
                           fontWeight: 900,
-                          fontSize: '20px'
+                          fontSize: '20px',
+                          clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                         }}>
                           {isCorrect ? '✓' : '✗'}
                         </div>
                         <h4 style={{
                           fontSize: '20px',
                           fontWeight: 700,
-                          color: '#333'
+                          color: '#efefef',
+                          fontFamily: "'Orbitron', sans-serif",
+                          letterSpacing: '1px',
+                          textTransform: 'uppercase'
                         }}>Question {idx + 1}</h4>
                       </div>
                       <p style={{
                         fontSize: '18px',
                         fontWeight: 600,
-                        color: '#333',
-                        marginBottom: '20px'
+                        color: '#efefef',
+                        marginBottom: '20px',
+                        fontFamily: "'Inter', sans-serif"
                       }}>{question.question}</p>
                       <div style={{ marginBottom: '15px' }}>
                         <div style={{
                           fontSize: '14px',
                           fontWeight: 700,
-                          color: '#666',
+                          color: '#efefef',
                           marginBottom: '10px',
-                          textTransform: 'uppercase'
+                          textTransform: 'uppercase',
+                          fontFamily: "'Orbitron', sans-serif",
+                          letterSpacing: '1px'
                         }}>Your Answer:</div>
                         <div style={{
                           padding: '15px',
-                          background: '#f9fafb',
-                          borderRadius: '15px',
+                          background: '#141943',
+                          borderRadius: '0',
                           color: isCorrect ? '#10b981' : '#ef4444',
-                          fontWeight: 600
+                          fontWeight: 600,
+                          border: `2px solid ${isCorrect ? '#10b981' : '#ef4444'}`,
+                          fontFamily: "'Inter', sans-serif",
+                          clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                         }}>
                           {userShuffledAnswer !== undefined 
                             ? (shuffledQuestions[question.id]?.shuffledOptions[userShuffledAnswer] || question.options[userOriginalAnswer] || 'No answer selected')
@@ -750,38 +1152,49 @@ export default function QuizPage() {
                           <div style={{
                             fontSize: '14px',
                             fontWeight: 700,
-                            color: '#666',
+                            color: '#efefef',
                             marginBottom: '10px',
-                            textTransform: 'uppercase'
+                            textTransform: 'uppercase',
+                            fontFamily: "'Orbitron', sans-serif",
+                            letterSpacing: '1px'
                           }}>Correct Answer:</div>
                           <div style={{
                             padding: '15px',
-                            background: '#ecfdf5',
-                            borderRadius: '15px',
+                            background: '#141943',
+                            borderRadius: '0',
                             color: '#10b981',
-                            fontWeight: 600
+                            fontWeight: 600,
+                            border: '2px solid #10b981',
+                            fontFamily: "'Inter', sans-serif",
+                            clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                           }}>
-                            {question.options[question.correctAnswer]}
+                            {Array.isArray(question.correctAnswer) 
+                              ? question.correctAnswer.map((idx: number) => question.options[idx]).join(', ')
+                              : question.options[question.correctAnswer]}
                           </div>
                         </div>
                       )}
                       <div style={{
                         padding: '15px',
-                        background: '#f0f9ff',
-                        borderRadius: '15px',
-                        borderLeft: '4px solid #007BFF'
+                        background: '#141943',
+                        borderRadius: '0',
+                        borderLeft: '4px solid #163791',
+                        border: '2px solid #163791'
                       }}>
                         <div style={{
                           fontSize: '14px',
                           fontWeight: 700,
-                          color: '#666',
+                          color: '#efefef',
                           marginBottom: '5px',
-                          textTransform: 'uppercase'
+                          textTransform: 'uppercase',
+                          fontFamily: "'Orbitron', sans-serif",
+                          letterSpacing: '1px'
                         }}>Explanation:</div>
                         <div style={{
-                          color: '#333',
+                          color: '#efefef',
                           fontSize: '15px',
-                          lineHeight: 1.6
+                          lineHeight: 1.6,
+                          fontFamily: "'Inter', sans-serif"
                         }}>{question.explanation}</div>
                       </div>
                     </div>
@@ -804,25 +1217,31 @@ export default function QuizPage() {
                   onClick={() => router.push(`/section/${section}`)}
                   style={{
                     padding: '18px 45px',
-                    background: 'linear-gradient(135deg, #007BFF, #0056B3)',
-                    border: 'none',
-                    color: '#fff',
+                    background: '#163791',
+                    border: '2px solid #001a62',
+                    color: '#efefef',
                     fontWeight: 900,
                     fontSize: '18px',
                     textTransform: 'uppercase',
                     cursor: 'pointer',
-                    borderRadius: '50px',
-                    boxShadow: '0 10px 30px rgba(131, 56, 236, 0.5)',
+                    borderRadius: '0',
+                    boxShadow: '0 10px 30px rgba(22, 55, 145, 0.5)',
                     transition: 'all 0.3s',
-                    letterSpacing: '1px'
+                    letterSpacing: '2px',
+                    fontFamily: "'Orbitron', sans-serif",
+                    clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                    e.currentTarget.style.boxShadow = '0 15px 40px rgba(131, 56, 236, 0.7)';
+                    e.currentTarget.style.boxShadow = '0 15px 40px rgba(22, 55, 145, 0.7)';
+                    e.currentTarget.style.background = '#001a62';
+                    e.currentTarget.style.borderColor = '#163791';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(131, 56, 236, 0.5)';
+                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(22, 55, 145, 0.5)';
+                    e.currentTarget.style.background = '#163791';
+                    e.currentTarget.style.borderColor = '#001a62';
                   }}
                 >
                   Review Section
@@ -833,28 +1252,34 @@ export default function QuizPage() {
                   disabled={percentage < 90}
                   style={{
                     padding: '18px 45px',
-                    background: percentage >= 90 ? 'linear-gradient(135deg, #10b981, #007BFF)' : '#e5e7eb',
-                    border: 'none',
-                    color: percentage >= 90 ? '#fff' : '#999',
+                    background: percentage >= 90 ? '#10b981' : '#141943',
+                    border: `2px solid ${percentage >= 90 ? '#059669' : '#163791'}`,
+                    color: '#efefef',
                     fontWeight: 900,
                     fontSize: '18px',
                     textTransform: 'uppercase',
                     cursor: percentage >= 90 ? 'pointer' : 'not-allowed',
-                    borderRadius: '50px',
+                    borderRadius: '0',
                     boxShadow: percentage >= 90 ? '0 10px 30px rgba(16, 185, 129, 0.5)' : 'none',
                     transition: 'all 0.3s',
-                    letterSpacing: '1px',
-                    opacity: percentage >= 90 ? 1 : 0.5
+                    letterSpacing: '2px',
+                    opacity: percentage >= 90 ? 1 : 0.5,
+                    fontFamily: "'Orbitron', sans-serif",
+                    clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                   }}
                   onMouseEnter={(e) => {
                     if (percentage >= 90) {
                       e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
                       e.currentTarget.style.boxShadow = '0 15px 40px rgba(16, 185, 129, 0.7)';
+                      e.currentTarget.style.background = '#059669';
+                      e.currentTarget.style.borderColor = '#10b981';
                     }
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0) scale(1)';
                     e.currentTarget.style.boxShadow = percentage >= 90 ? '0 10px 30px rgba(16, 185, 129, 0.5)' : 'none';
+                    e.currentTarget.style.background = percentage >= 90 ? '#10b981' : '#141943';
+                    e.currentTarget.style.borderColor = percentage >= 90 ? '#059669' : '#163791';
                   }}
                 >
                   {section === 'final' ? 'Go to Dashboard →' : 

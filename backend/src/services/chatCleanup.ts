@@ -1,5 +1,6 @@
 // Chat cleanup service - deletes expired chat messages (older than 1 day)
 import { supabase } from '../config/database';
+import { getISTDate, getISTDateDaysAgo } from '../utils/date';
 
 class ChatCleanupService {
   private cleanupInterval: NodeJS.Timeout | null = null;
@@ -27,9 +28,7 @@ class ChatCleanupService {
 
   private async cleanup() {
     try {
-      const oneDayAgo = new Date();
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-      const oneDayAgoISO = oneDayAgo.toISOString();
+      const oneDayAgoISO = getISTDateDaysAgo(1);
       
       // Delete all messages created more than 1 day ago (based on createdAt, not expiresAt)
       const { error } = await supabase
@@ -42,7 +41,7 @@ class ChatCleanupService {
         return;
       }
 
-      console.log(`✅ Chat cleanup completed at ${new Date().toISOString()} - deleted messages older than 1 day`);
+      console.log(`✅ Chat cleanup completed at ${getISTDate()} - deleted messages older than 1 day`);
     } catch (error) {
       console.error('❌ Chat cleanup failed:', error);
     }

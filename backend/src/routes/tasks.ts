@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getISTDate } from '../utils/date';
 
 const router = express.Router();
 
@@ -115,8 +116,8 @@ router.put('/:id', authenticate, async (req: AuthRequest, res) => {
     const updateData: any = { status };
 
     if (status === 'COMPLETED') {
-      updateData.completedAt = new Date().toISOString();
-      updateData.submittedAt = new Date().toISOString();
+      updateData.completedAt = getISTDate();
+      updateData.submittedAt = getISTDate();
     }
 
     const { data: updatedTask, error } = await supabase

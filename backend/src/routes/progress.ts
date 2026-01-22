@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getISTDate } from '../utils/date';
 
 const router = express.Router();
 
@@ -27,18 +28,58 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       .order('completedAt', { ascending: false });
 
     // Map quiz scores to progress entries
-    const progressWithQuizzes = (progress || []).map((p: any) => {
+    // Also create progress entries for sections with completed quizzes but no progress entry
+    const progressMap = new Map();
+    (progress || []).forEach((p: any) => {
+      progressMap.set(p.day, p);
+    });
+    
+    // Find quizzes for sections 1-4 and ensure progress entries exist
+    const sectionQuizzes = (quizzes || []).filter((q: any) => q.day && q.day <= 4);
+    
+    // Create progress entries for sections with quizzes but no progress entry
+    for (const quiz of sectionQuizzes) {
+      if (!progressMap.has(quiz.day)) {
+        // Create a progress entry for this section based on quiz score
+        const passingScore = 90;
+        progressMap.set(quiz.day, {
+          day: quiz.day,
+          section: quiz.day,
+          status: quiz.percentage >= passingScore ? 'COMPLETED' : (quiz.percentage > 0 ? 'IN_PROGRESS' : 'NOT_STARTED'),
+          dayEndQuizScore: quiz.percentage,
+          quizScore: quiz.percentage,
+          quizCompletedAt: quiz.completedAt,
+          passedQuiz: quiz.percentage >= passingScore,
+        });
+      }
+    }
+    
+    const progressWithQuizzes = Array.from(progressMap.values()).map((p: any) => {
       const section = p.day; // Progress uses day column
       // Find the best quiz score for this section (day 1-4)
       const sectionQuiz = quizzes?.find((q: any) => {
         return q.day === section && section <= 4;
       });
       
+      const passingScore = 90;
+      const quizScore = sectionQuiz?.percentage || p.dayEndQuizScore;
+      const passedQuiz = quizScore !== undefined && quizScore >= passingScore;
+      
+      // Update status based on quiz score if quiz exists
+      let status = p.status || 'NOT_STARTED';
+      if (sectionQuiz && status === 'NOT_STARTED') {
+        status = quizScore >= passingScore ? 'COMPLETED' : (quizScore > 0 ? 'IN_PROGRESS' : 'NOT_STARTED');
+      } else if (sectionQuiz && status !== 'COMPLETED' && quizScore >= passingScore) {
+        status = 'COMPLETED';
+      }
+      
       return {
         ...p,
-        quizScore: sectionQuiz?.percentage || p.dayEndQuizScore,
-        quizCompletedAt: sectionQuiz?.completedAt,
-        passedQuiz: sectionQuiz ? sectionQuiz.percentage >= 80 : (p.dayEndQuizScore ? p.dayEndQuizScore >= 80 : false),
+        section: p.section || p.day,
+        quizScore,
+        quizCompletedAt: sectionQuiz?.completedAt || p.quizCompletedAt,
+        passedQuiz,
+        status,
       };
     });
 
@@ -118,18 +159,58 @@ router.get('/:userId', authenticate, async (req: AuthRequest, res) => {
     const quizzes = quizzesResult.data || [];
 
     // Map quiz scores to progress entries
-    const progressWithQuizzes = (progress || []).map((p: any) => {
+    // Also create progress entries for sections with completed quizzes but no progress entry
+    const progressMap = new Map();
+    (progress || []).forEach((p: any) => {
+      progressMap.set(p.day, p);
+    });
+    
+    // Find quizzes for sections 1-4 and ensure progress entries exist
+    const sectionQuizzes = (quizzes || []).filter((q: any) => q.day && q.day <= 4);
+    
+    // Create progress entries for sections with quizzes but no progress entry
+    for (const quiz of sectionQuizzes) {
+      if (!progressMap.has(quiz.day)) {
+        // Create a progress entry for this section based on quiz score
+        const passingScore = 90;
+        progressMap.set(quiz.day, {
+          day: quiz.day,
+          section: quiz.day,
+          status: quiz.percentage >= passingScore ? 'COMPLETED' : (quiz.percentage > 0 ? 'IN_PROGRESS' : 'NOT_STARTED'),
+          dayEndQuizScore: quiz.percentage,
+          quizScore: quiz.percentage,
+          quizCompletedAt: quiz.completedAt,
+          passedQuiz: quiz.percentage >= passingScore,
+        });
+      }
+    }
+    
+    const progressWithQuizzes = Array.from(progressMap.values()).map((p: any) => {
       const section = p.day; // Progress uses day column
       // Find the best quiz score for this section (day 1-4)
       const sectionQuiz = quizzes?.find((q: any) => {
         return q.day === section && section <= 4;
       });
       
+      const passingScore = 90;
+      const quizScore = sectionQuiz?.percentage || p.dayEndQuizScore;
+      const passedQuiz = quizScore !== undefined && quizScore >= passingScore;
+      
+      // Update status based on quiz score if quiz exists
+      let status = p.status || 'NOT_STARTED';
+      if (sectionQuiz && status === 'NOT_STARTED') {
+        status = quizScore >= passingScore ? 'COMPLETED' : (quizScore > 0 ? 'IN_PROGRESS' : 'NOT_STARTED');
+      } else if (sectionQuiz && status !== 'COMPLETED' && quizScore >= passingScore) {
+        status = 'COMPLETED';
+      }
+      
       return {
         ...p,
-        quizScore: sectionQuiz?.percentage || p.dayEndQuizScore,
-        quizCompletedAt: sectionQuiz?.completedAt,
-        passedQuiz: sectionQuiz ? sectionQuiz.percentage >= 80 : (p.dayEndQuizScore ? p.dayEndQuizScore >= 80 : false),
+        section: p.section || p.day,
+        quizScore,
+        quizCompletedAt: sectionQuiz?.completedAt || p.quizCompletedAt,
+        passedQuiz,
+        status,
       };
     });
 
@@ -198,10 +279,10 @@ router.put('/day/:day', authenticate, async (req: AuthRequest, res) => {
     if (tasksTotal !== undefined) updateData.tasksTotal = tasksTotal;
 
     if (status === 'IN_PROGRESS' && !existingProgress?.startedAt) {
-      updateData.startedAt = new Date().toISOString();
+      updateData.startedAt = getISTDate();
     }
     if (status === 'COMPLETED') {
-      updateData.completedAt = new Date().toISOString();
+      updateData.completedAt = getISTDate();
     }
 
     let progress;
@@ -223,8 +304,8 @@ router.put('/day/:day', authenticate, async (req: AuthRequest, res) => {
           userId,
           day: dayNumber,
           ...updateData,
-          startedAt: status === 'IN_PROGRESS' ? new Date().toISOString() : null,
-          completedAt: status === 'COMPLETED' ? new Date().toISOString() : null,
+          startedAt: status === 'IN_PROGRESS' ? getISTDate() : null,
+          completedAt: status === 'COMPLETED' ? getISTDate() : null,
         })
         .select()
         .single();
@@ -270,10 +351,10 @@ router.put('/section/:section', authenticate, async (req: AuthRequest, res) => {
     }
 
     if (status === 'IN_PROGRESS' && !existingProgress?.startedAt) {
-      updateData.startedAt = new Date().toISOString();
+      updateData.startedAt = getISTDate();
     }
     if (status === 'COMPLETED') {
-      updateData.completedAt = new Date().toISOString();
+      updateData.completedAt = getISTDate();
     }
 
     let progress;
@@ -295,8 +376,8 @@ router.put('/section/:section', authenticate, async (req: AuthRequest, res) => {
           userId,
           day: dayNumber,
           ...updateData,
-          startedAt: status === 'IN_PROGRESS' ? new Date().toISOString() : null,
-          completedAt: status === 'COMPLETED' ? new Date().toISOString() : null,
+          startedAt: status === 'IN_PROGRESS' ? getISTDate() : null,
+          completedAt: status === 'COMPLETED' ? getISTDate() : null,
         })
         .select()
         .single();

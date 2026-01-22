@@ -551,10 +551,17 @@ export default function DashboardPage() {
                 const progress = mappedProgress.find((p: any) => {
                   return (p.section === sectionNum) || (p.day === sectionNum);
                 });
-                const status = progress?.status || 'NOT_STARTED';
-                const isCurrentSection = sectionNum === currentSectionNum;
+                // Determine status: check if quiz was passed (90%+) even if progress entry doesn't exist
                 const quizScore = progress?.quizScore;
-                const passedQuiz = progress?.passedQuiz || (quizScore !== undefined && quizScore >= 80);
+                const passedQuiz = progress?.passedQuiz || (quizScore !== undefined && quizScore >= 90);
+                let status = progress?.status || 'NOT_STARTED';
+                
+                // If quiz was passed but status is NOT_STARTED, update to IN_PROGRESS or COMPLETED
+                if (passedQuiz && status === 'NOT_STARTED') {
+                  status = quizScore >= 90 ? 'COMPLETED' : 'IN_PROGRESS';
+                }
+                
+                const isCurrentSection = sectionNum === currentSectionNum;
                 
                 let bgColor = '#141943';
                 let borderColor = '#163791';
@@ -666,7 +673,7 @@ export default function DashboardPage() {
                       fontFamily: "'Orbitron', sans-serif",
                       letterSpacing: '1px'
                     }}>Estimated: {section.estimatedDuration} {section.hasQuiz && '• Includes Quiz'}</div>
-                    {status === 'COMPLETED' && progress?.quizScore !== undefined && progress?.quizScore >= 80 && (
+                    {(status === 'COMPLETED' || passedQuiz) && progress?.quizScore !== undefined && progress?.quizScore >= 90 && (
                       <div style={{
                         fontSize: '13px',
                         fontWeight: 700,

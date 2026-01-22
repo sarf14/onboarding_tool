@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config/env';
 import { supabase } from './config/database';
+import { getISTDate } from './utils/date';
 
 const app = express();
 
@@ -64,7 +65,7 @@ app.get('/api/health/db', async (req, res) => {
       status: 'ok', 
       message: 'Onboarding API is running',
       database: error ? 'disconnected' : 'connected',
-      timestamp: new Date().toISOString()
+      timestamp: getISTDate()
     });
   } catch (error) {
     res.status(503).json({ 
