@@ -89,7 +89,8 @@ export default function QuizPage() {
                   correct++;
                 }
                 
-                const answerToPush: number | number[] = userSelectedAnswers.length > 0 ? userSelectedAnswers : [-1];
+                const emptyAnswer: number[] = [-1];
+                const answerToPush: number | number[] = userSelectedAnswers.length > 0 ? userSelectedAnswers : emptyAnswer;
                 answerArray.push(answerToPush);
               } else {
                 // Single select question
@@ -247,7 +248,8 @@ export default function QuizPage() {
         }
         
         // Store as array for multi-select
-        const answerToPush: number | number[] = userSelectedAnswers.length > 0 ? userSelectedAnswers : [-1];
+        const emptyAnswer: number[] = [-1];
+        const answerToPush: number | number[] = userSelectedAnswers.length > 0 ? userSelectedAnswers : emptyAnswer;
         answerArray.push(answerToPush);
       } else {
         // Single select question
