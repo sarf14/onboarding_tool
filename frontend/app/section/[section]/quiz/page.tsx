@@ -66,7 +66,7 @@ export default function QuizPage() {
             
             let correct = 0;
             const questions = quizData.quiz.questions;
-            const answerArray: number[] = [];
+            const answerArray: (number | number[])[] = [];
             
             questions.forEach((q: any) => {
               const userShuffledAnswer = answers[q.id];
@@ -89,7 +89,8 @@ export default function QuizPage() {
                   correct++;
                 }
                 
-                answerArray.push(userSelectedAnswers.length > 0 ? userSelectedAnswers : [-1]);
+                const answerToPush: number | number[] = userSelectedAnswers.length > 0 ? userSelectedAnswers : [-1];
+                answerArray.push(answerToPush);
               } else {
                 // Single select question
                 const userOriginalAnswer = userShuffledAnswer !== undefined 
@@ -221,7 +222,7 @@ export default function QuizPage() {
     
     let correct = 0;
     const questions = quizData.quiz.questions;
-    const answerArray: number[] = [];
+    const answerArray: (number | number[])[] = [];
     
     questions.forEach((q: any) => {
       const userShuffledAnswer = answers[q.id];
@@ -246,7 +247,8 @@ export default function QuizPage() {
         }
         
         // Store as array for multi-select
-        answerArray.push(userSelectedAnswers.length > 0 ? userSelectedAnswers : [-1]);
+        const answerToPush: number | number[] = userSelectedAnswers.length > 0 ? userSelectedAnswers : [-1];
+        answerArray.push(answerToPush);
       } else {
         // Single select question
         const userOriginalAnswer = userShuffledAnswer !== undefined 
@@ -1143,7 +1145,13 @@ export default function QuizPage() {
                           clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'
                         }}>
                           {userShuffledAnswer !== undefined 
-                            ? (shuffledQuestions[question.id]?.shuffledOptions[userShuffledAnswer] || question.options[userOriginalAnswer] || 'No answer selected')
+                            ? (isMultiSelect
+                                ? (Array.isArray(userShuffledAnswer) 
+                                    ? userShuffledAnswer.map((idx: number) => shuffledQuestions[question.id]?.shuffledOptions[idx] || '').filter(Boolean).join(', ') || 'No answer selected'
+                                    : 'No answer selected')
+                                : (typeof userShuffledAnswer === 'number'
+                                    ? (shuffledQuestions[question.id]?.shuffledOptions[userShuffledAnswer] || (typeof userOriginalAnswer === 'number' ? question.options[userOriginalAnswer] : '') || 'No answer selected')
+                                    : 'No answer selected'))
                             : 'No answer selected'}
                         </div>
                       </div>
