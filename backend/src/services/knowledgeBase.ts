@@ -33,7 +33,12 @@ class KnowledgeBaseService {
   }
 
   private async buildKnowledgeBase() {
-    // Add all page content
+    // ONLY load these sources:
+    // 1. Page content (from pageContent.ts)
+    // 2. H2H document
+    // 3. 3 user-provided documents
+    
+    // 1. Add all page content
     Object.entries(pageContent).forEach(([pageNum, content]) => {
       this.chunks.push({
         id: `page-${pageNum}`,
@@ -43,144 +48,25 @@ class KnowledgeBaseService {
       });
     });
 
-    // Add course content
-    Object.entries(courseContent).forEach(([sectionKey, section]) => {
-      // Add section overview
-      this.chunks.push({
-        id: `section-${sectionKey}`,
-        content: `Section: ${section.title}\n\nDescription: ${section.description}\n\nDuration: ${section.estimatedDuration}\n\nTopics: ${section.topics?.join(', ') || 'N/A'}`,
-        source: section.title,
-        section: sectionKey,
-        type: 'course',
-      });
+    // NOTE: Course content, quiz content, onboarding plan, and extracted data are EXCLUDED
+    // Only page content, H2H doc, and 3 user documents are loaded
 
-      // Add activities
-      section.activities?.forEach((activity, idx) => {
-        if (activity.content) {
-          this.chunks.push({
-            id: `activity-${sectionKey}-${idx}`,
-            content: `Activity: ${activity.name}\n\n${activity.content}`,
-            source: `${section.title} - ${activity.name}`,
-            section: sectionKey,
-            type: 'course',
-          });
-        }
-      });
-    });
+    // 2. Load H2H document
+    await this.loadH2HDocument();
 
-    // NOTE: Quiz content is EXCLUDED from knowledge base
-    // Chatbot should only answer from training materials, not quiz questions/answers
-    // Quiz content is intentionally not added to prevent chatbot from giving quiz answers
-
-    // Try to load additional documents if they exist
-    await this.loadAdditionalDocuments();
+    // 3. Load the 3 user-provided documents
+    await this.loadUserDocuments();
   }
 
-  private async loadAdditionalDocuments() {
-    // Load onboarding plan
-    try {
-      const possiblePaths = [
-        path.join(__dirname, '../../../7_day_onboarding_plan.md'),
-        path.join(process.cwd(), '7_day_onboarding_plan.md'),
-        path.join(process.cwd(), '../7_day_onboarding_plan.md'),
-      ];
-      
-      for (const onboardingPath of possiblePaths) {
-        try {
-          if (fs.existsSync(onboardingPath)) {
-            const content = fs.readFileSync(onboardingPath, 'utf-8');
-            // Split into sections for better search
-            const sections = content.split(/\n##\s+/);
-            sections.forEach((section, idx) => {
-              if (section.trim()) {
-                this.chunks.push({
-                  id: `onboarding-plan-${idx}`,
-                  content: section.trim(),
-                  source: '7-Day Onboarding Plan',
-                  type: 'document',
-                });
-              }
-            });
-            console.log(`✓ Loaded onboarding plan (${sections.length} sections)`);
-            break;
-          }
-        } catch (fileError) {
-          continue;
-        }
-      }
-    } catch (error) {
-      console.warn('Could not load onboarding plan:', error);
-    }
-
-    // Load extracted page content (page_1.txt through page_11.txt)
-    try {
-      const possiblePaths = [
-        path.join(__dirname, '../../../extracted/data'),
-        path.join(process.cwd(), 'extracted/data'),
-        path.join(process.cwd(), '../extracted/data'),
-      ];
-      
-      for (const extractedPath of possiblePaths) {
-        try {
-          if (fs.existsSync(extractedPath) && fs.statSync(extractedPath).isDirectory()) {
-            // Load page files (page_1.txt to page_11.txt)
-            for (let i = 1; i <= 11; i++) {
-              const pageFile = path.join(extractedPath, `page_${i}.txt`);
-              if (fs.existsSync(pageFile)) {
-                try {
-                  const content = fs.readFileSync(pageFile, 'utf-8');
-                  if (content.trim()) {
-                    this.chunks.push({
-                      id: `extracted-page-${i}`,
-                      content: content.trim(),
-                      source: `Page ${i} - Extracted Content`,
-                      type: 'document',
-                    });
-                  }
-                } catch (fileError) {
-                  console.warn(`Could not read page_${i}.txt:`, fileError);
-                }
-              }
-            }
-            
-            // Load other text files
-            const files = fs.readdirSync(extractedPath);
-            files.forEach((file) => {
-              if (file.endsWith('.txt') && !file.startsWith('page_')) {
-                try {
-                  const filePath = path.join(extractedPath, file);
-                  const content = fs.readFileSync(filePath, 'utf-8');
-                  if (content.trim()) {
-                    this.chunks.push({
-                      id: `extracted-${file}`,
-                      content: content.trim(),
-                      source: `Extracted: ${file.replace('.txt', '')}`,
-                      type: 'document',
-                    });
-                  }
-                } catch (fileError) {
-                  console.warn(`Could not read ${file}:`, fileError);
-                }
-              }
-            });
-            
-            console.log(`✓ Loaded extracted data files from ${extractedPath}`);
-            break;
-          }
-        } catch (pathError) {
-          continue;
-        }
-      }
-    } catch (error) {
-      console.warn('Could not load extracted content:', error);
-    }
-
-    // Load H2H content
+  // Load H2H document only
+  private async loadH2HDocument() {
     try {
       const possiblePaths = [
         path.join(__dirname, '../../../extracted/h2h'),
         path.join(process.cwd(), 'extracted/h2h'),
         path.join(process.cwd(), '../extracted/h2h'),
+        path.join(process.cwd(), 'documents/h2h'),
+        path.join(__dirname, '../../../documents/h2h'),
       ];
       
       for (const h2hPath of possiblePaths) {
@@ -188,17 +74,22 @@ class KnowledgeBaseService {
           if (fs.existsSync(h2hPath) && fs.statSync(h2hPath).isDirectory()) {
             const files = fs.readdirSync(h2hPath);
             files.forEach((file) => {
-              if (file.endsWith('.txt')) {
+              if (file.endsWith('.txt') || file.endsWith('.docx')) {
                 try {
                   const filePath = path.join(h2hPath, file);
-                  const content = fs.readFileSync(filePath, 'utf-8');
-                  if (content.trim()) {
-                    this.chunks.push({
-                      id: `h2h-${file}`,
-                      content: content.trim(),
-                      source: `H2H Review: ${file.replace('.txt', '').replace('h2h_page_', 'Page ')}`,
-                      type: 'document',
-                    });
+                  if (file.endsWith('.txt')) {
+                    const content = fs.readFileSync(filePath, 'utf-8');
+                    if (content.trim()) {
+                      this.chunks.push({
+                        id: `h2h-${file}`,
+                        content: content.trim(),
+                        source: `H2H Review: ${file.replace('.txt', '').replace('h2h_page_', 'Page ')}`,
+                        type: 'document',
+                      });
+                    }
+                  } else if (file.endsWith('.docx')) {
+                    // Load docx file
+                    await this.loadDocxFile(filePath, file);
                   }
                 } catch (fileError) {
                   console.warn(`Could not read H2H file ${file}:`, fileError);
@@ -215,52 +106,86 @@ class KnowledgeBaseService {
     } catch (error) {
       console.warn('Could not load H2H content:', error);
     }
-
-    // Load documents from custom folder
-    await this.loadCustomDocuments();
-
-    console.log(`📚 Knowledge base loaded: ${this.chunks.length} total chunks`);
   }
 
-  private async loadCustomDocuments() {
-    // Load from custom folder
-    const customDocPaths = [
-      'C:\\Users\\Sarfaraz\\Downloads\\doc',
-      path.join(process.cwd(), 'documents'),
-      path.join(process.cwd(), '../documents'),
+  // Load only the 3 user-provided documents
+  private async loadUserDocuments() {
+    // Define the 3 specific documents to load
+    const userDocuments = [
+      'EC Example Library - Part 1 (Prompt Errors & Model Actions).docx',
+      'EC Example Library - Part 2 (Model Thoughts, Output, Infrastructure & Tool Errors).docx',
+      'EC Example Library Recruitment test.docx',
     ];
 
-    for (const docPath of customDocPaths) {
+    const possibleDocPaths = [
+      path.join(process.cwd(), 'documents'),
+      path.join(process.cwd(), '../documents'),
+      path.join(__dirname, '../../../documents'),
+      path.join(process.cwd(), 'backend/documents'),
+      // Also check project root directory (where documents might be placed)
+      path.join(__dirname, '../../../'),
+      path.join(process.cwd(), '..'),
+      process.cwd(), // Current working directory (could be project root)
+    ];
+
+    // First, try to find documents in directories
+    for (const docPath of possibleDocPaths) {
       try {
         if (fs.existsSync(docPath) && fs.statSync(docPath).isDirectory()) {
-          console.log(`📂 Loading documents from: ${docPath}`);
-          await this.loadDocumentsFromFolder(docPath);
-          break;
+          for (const docName of userDocuments) {
+            const docFilePath = path.join(docPath, docName);
+            try {
+              if (fs.existsSync(docFilePath) && fs.statSync(docFilePath).isFile()) {
+                console.log(`📄 Loading user document: ${docName}`);
+                await this.loadDocxFile(docFilePath, docName);
+              }
+            } catch (fileError) {
+              console.warn(`⚠ Could not load document ${docName}:`, fileError);
+            }
+          }
         }
-      } catch (error) {
+      } catch (pathError) {
+        continue;
+      }
+    }
+    
+    // Also check if documents are directly in root paths (not in subdirectories)
+    const rootPaths = [
+      path.join(__dirname, '../../../'),
+      path.join(process.cwd(), '..'),
+      process.cwd(),
+    ];
+    
+    for (const rootPath of rootPaths) {
+      try {
+        if (fs.existsSync(rootPath)) {
+          for (const docName of userDocuments) {
+            const docFilePath = path.join(rootPath, docName);
+            try {
+              if (fs.existsSync(docFilePath) && fs.statSync(docFilePath).isFile()) {
+                // Check if we haven't already loaded this document
+                const alreadyLoaded = this.chunks.some(chunk => 
+                  chunk.source.includes(docName.replace('.docx', ''))
+                );
+                if (!alreadyLoaded) {
+                  console.log(`📄 Loading user document from root: ${docName}`);
+                  await this.loadDocxFile(docFilePath, docName);
+                }
+              }
+            } catch (fileError) {
+              // Silently continue - document might not be in this location
+            }
+          }
+        }
+      } catch (pathError) {
         continue;
       }
     }
 
-    // Load specific additional documents
-    const additionalDocs = [
-      'C:\\Users\\Sarfaraz\\Downloads\\Head to Head (H2H) Navigator Evals (1).docx',
-    ];
-
-    for (const docPath of additionalDocs) {
-      try {
-        if (fs.existsSync(docPath) && fs.statSync(docPath).isFile()) {
-          console.log(`📄 Loading additional document: ${docPath}`);
-          const fileName = path.basename(docPath);
-          await this.loadDocxFile(docPath, fileName);
-        } else {
-          console.warn(`⚠ Document not found: ${docPath}`);
-        }
-      } catch (error) {
-        console.error(`✗ Error loading document ${docPath}:`, error);
-      }
-    }
+    console.log(`📚 Knowledge base loaded: ${this.chunks.length} total chunks`);
   }
+
+  // REMOVED: loadCustomDocuments - we only load specific documents now
 
   private async loadDocumentsFromFolder(folderPath: string, basePath: string = '') {
     try {
