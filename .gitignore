@@ -82,6 +82,8 @@ nul
 # Document files (don't commit)
 *.docx
 *.pdf
+# Exception: Allow specific training documents needed for deployment
+!backend/documents/*.docx
 
 # Python scripts (don't commit)
 *.py
