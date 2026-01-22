@@ -47,15 +47,12 @@ import h2hRoutes from './routes/h2h';
 import { chatCleanupService } from './services/chatCleanup';
 import { quizCleanupService } from './services/quizCleanup';
 
-// Health check endpoint (lightweight - no DB query for ping services)
+// Health check endpoint (ultra-lightweight - minimal response for ping services)
 app.get('/api/health', async (req, res) => {
-  // Lightweight health check for ping services (keeps Render awake)
+  // Ultra-minimal health check for ping services (keeps Render awake)
+  // Returns minimal response to avoid "output too large" errors in cron services
   // Use /api/health/db for full health check with database verification
-  res.json({ 
-    status: 'ok', 
-    message: 'Onboarding API is running',
-    timestamp: new Date().toISOString()
-  });
+  res.status(200).json({ ok: 1 });
 });
 
 // Full health check with database verification (for monitoring/debugging)
@@ -91,8 +88,8 @@ app.use('/api/content', contentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/h2h', h2hRoutes);
 
-// Start server
-const server = app.listen(config.port, () => {
+// Start server - bind to 0.0.0.0 for Render/cloud hosting
+const server = app.listen(config.port, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${config.port}`);
   console.log(`📊 Environment: ${config.nodeEnv}`);
   console.log(`🌐 Frontend URL: ${config.frontendUrl}`);

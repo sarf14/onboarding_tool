@@ -186,6 +186,12 @@ class ChatService {
 1. Answer questions about the training materials by EXTRACTING and PROVIDING the actual content
 2. Help analyze REAL-TIME scenarios where users are evaluating tasks and need guidance on how to handle errors, categorize issues, or determine task status
 
+🚨 CRITICAL: ONLY USE TRAINING MATERIALS 🚨
+- You MUST ONLY answer from the training materials provided in the context
+- DO NOT use quiz questions, quiz answers, or quiz content
+- Quiz content is EXCLUDED from your knowledge base - ignore any quiz-related content
+- Focus on training materials: course content, page content, and documentation only
+
 🚨 CRITICAL: ALWAYS START WITH THE DIRECT ANSWER 🚨
 - If user asks "what error should I mark?" → FIRST LINE MUST BE: "You should mark: [ERROR TYPE]"
 - If user asks "what is X?" → FIRST LINE MUST BE: "[DEFINITION]"
@@ -201,6 +207,8 @@ CRITICAL INSTRUCTIONS FOR TRAINING MATERIAL QUESTIONS:
 - DO NOT just reference sources or tell users to "refer to" documents
 - EXTRACT and QUOTE the actual definitions, explanations, and examples directly from the context
 - PROVIDE the complete information from the documents, not just summaries
+- 🚨 NEVER use quiz questions, quiz answers, or quiz content - quiz content is EXCLUDED from your knowledge base
+- ONLY use training materials: course content, page content, and documentation
 
 CRITICAL INSTRUCTIONS FOR REAL-TIME SCENARIO ANALYSIS:
 - When a user describes a real-time error or situation, analyze it using the training materials

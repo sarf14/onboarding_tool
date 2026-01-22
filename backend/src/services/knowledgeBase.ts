@@ -1,7 +1,8 @@
 // Knowledge Base Service - Aggregates all course content for RAG
+// NOTE: Quiz content is EXCLUDED - chatbot only uses training materials
 import { courseContent } from '../data/courseContent';
 import { pageContent } from '../data/pageContent';
-import { quizzes } from '../data/quizzes';
+// import { quizzes } from '../data/quizzes'; // NOT IMPORTED - quiz content excluded from knowledge base
 import * as fs from 'fs';
 import * as path from 'path';
 import mammoth from 'mammoth';
@@ -67,22 +68,9 @@ class KnowledgeBaseService {
       });
     });
 
-    // Add quiz content (questions and answers)
-    Object.entries(quizzes).forEach(([quizKey, quiz]) => {
-      quiz.questions.forEach((question, idx) => {
-        const questionText = question.question;
-        const options = question.options?.join('\n') || '';
-        const correctAnswer = question.options?.[question.correctAnswer] || '';
-        const explanation = question.explanation || '';
-
-        this.chunks.push({
-          id: `quiz-${quizKey}-q${idx}`,
-          content: `Quiz Question: ${questionText}\n\nOptions:\n${options}\n\nCorrect Answer: ${correctAnswer}\n\nExplanation: ${explanation}`,
-          source: `${quiz.title} - Question ${idx + 1}`,
-          type: 'quiz',
-        });
-      });
-    });
+    // NOTE: Quiz content is EXCLUDED from knowledge base
+    // Chatbot should only answer from training materials, not quiz questions/answers
+    // Quiz content is intentionally not added to prevent chatbot from giving quiz answers
 
     // Try to load additional documents if they exist
     await this.loadAdditionalDocuments();
@@ -467,8 +455,11 @@ class KnowledgeBaseService {
                               (queryLower.includes('step') && (queryLower.includes('error') || queryLower.includes('mark'))) ||
                               queryLower.includes('trajectory status');
 
-    // Score chunks based on keyword matches
-    const scoredChunks = this.chunks.map((chunk) => {
+    // Filter out quiz content - chatbot should only use training materials
+    const trainingChunks = this.chunks.filter(chunk => chunk.type !== 'quiz');
+    
+    // Score chunks based on keyword matches (only training materials)
+    const scoredChunks = trainingChunks.map((chunk) => {
       const contentLower = chunk.content.toLowerCase();
       const sourceLower = chunk.source.toLowerCase();
       let score = 0;
