@@ -73,7 +73,7 @@ class KnowledgeBaseService {
         try {
           if (fs.existsSync(h2hPath) && fs.statSync(h2hPath).isDirectory()) {
             const files = fs.readdirSync(h2hPath);
-            files.forEach((file) => {
+            for (const file of files) {
               if (file.endsWith('.txt') || file.endsWith('.docx')) {
                 try {
                   const filePath = path.join(h2hPath, file);
@@ -95,7 +95,7 @@ class KnowledgeBaseService {
                   console.warn(`Could not read H2H file ${file}:`, fileError);
                 }
               }
-            });
+            }
             console.log(`✓ Loaded H2H content from ${h2hPath}`);
             break;
           }
