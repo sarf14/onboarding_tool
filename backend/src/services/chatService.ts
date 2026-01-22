@@ -68,13 +68,12 @@ class ChatService {
     const apiUrl = config.llm?.apiUrl || 'https://api.deepseek.com';
     const model = config.llm?.model || 'deepseek-chat';
 
-    // Validate configuration
+    // Validate configuration - but don't throw if API key is missing (will use fallback)
     if (!apiUrl) {
       throw new Error('LLM_API_URL is required. Please set it in your .env file.');
     }
-    if (!apiKey && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
-      throw new Error('LLM_API_KEY or DEEPSEEK_API_KEY is required. Please set it in your .env file.');
-    }
+    // Note: API key check is done before calling this method, so we can proceed if missing
+    // (fallback will be used instead)
     if (!model && !apiUrl.includes('localhost')) {
       throw new Error('LLM_MODEL is required. Please set it in your .env file.');
     }
@@ -162,6 +161,14 @@ class ChatService {
         sources: [],
         contextUsed: [],
       };
+    }
+    
+    // Check if LLM API key is available before attempting to call LLM
+    const apiKey = config.llm?.apiKey || process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      // Return fallback response immediately if no API key
+      console.warn('LLM_API_KEY not configured, using fallback response');
+      return this.getFallbackResponse(userMessage);
     }
     
     const context = relevantChunks
@@ -364,9 +371,10 @@ Respond in the SAME LANGUAGE the user used.`}`;
   }
 
   // Fallback response when LLM is not available
+  // This should match LLM behavior as closely as possible
   getFallbackResponse(query: string): ChatResponse {
     try {
-      const relevantChunks = knowledgeBase.search(query, 3);
+      const relevantChunks = knowledgeBase.search(query, 5);
       
       if (relevantChunks.length === 0) {
         return {
@@ -376,13 +384,62 @@ Respond in the SAME LANGUAGE the user used.`}`;
         };
       }
 
-      const topChunk = relevantChunks[0];
-      const response = `Based on the training materials, here's what I found:\n\n${topChunk.content.substring(0, 500)}...\n\n[Source: ${topChunk.source}]`;
+      // Filter out quiz content (double protection)
+      const trainingChunks = relevantChunks.filter(chunk => chunk.type !== 'quiz');
+      
+      if (trainingChunks.length === 0) {
+        return {
+          message: "I couldn't find specific information about that topic in the training materials. The chatbot only uses training materials (course content, page content, and documentation) - quiz content is excluded.",
+          sources: [],
+          contextUsed: [],
+        };
+      }
+
+      // Build response from multiple chunks for better context
+      const topChunks = trainingChunks.slice(0, 3);
+      const chunkTexts = topChunks.map((chunk, idx) => {
+        const content = chunk.content.length > 800 ? chunk.content.substring(0, 800) + '...' : chunk.content;
+        return `[Source ${idx + 1}: ${chunk.source}]\n${content}`;
+      }).join('\n\n---\n\n');
+
+      // Check if query is asking about something that doesn't exist
+      const queryLower = query.toLowerCase();
+      const isAskingAboutDifference = queryLower.includes('difference') || queryLower.includes('different');
+      
+      // If asking about something that might not exist, check all chunks
+      let response = '';
+      if (isAskingAboutDifference) {
+        // Look for mentions of both terms in the query
+        const terms = queryLower.split(/\s+(?:and|vs|versus|difference|between)\s+/);
+        const foundTerms: string[] = [];
+        const missingTerms: string[] = [];
+        
+        terms.forEach(term => {
+          const trimmedTerm = term.trim();
+          const found = topChunks.some(chunk => 
+            chunk.content.toLowerCase().includes(trimmedTerm) || 
+            chunk.source.toLowerCase().includes(trimmedTerm)
+          );
+          if (found) {
+            foundTerms.push(trimmedTerm);
+          } else {
+            missingTerms.push(trimmedTerm);
+          }
+        });
+        
+        if (missingTerms.length > 0) {
+          response = `Based on the training materials, I found information about "${foundTerms.join('" and "')}" but "${missingTerms.join('" and "')}" is not defined or mentioned in the training materials.\n\n${chunkTexts}`;
+        } else {
+          response = `Based on the training materials:\n\n${chunkTexts}`;
+        }
+      } else {
+        response = `Based on the training materials:\n\n${chunkTexts}`;
+      }
 
       return {
         message: response,
-        sources: relevantChunks.map((chunk) => ({ source: chunk.source, id: chunk.id })),
-        contextUsed: relevantChunks.map((chunk) => chunk.source),
+        sources: topChunks.map((chunk) => ({ source: chunk.source, id: chunk.id })),
+        contextUsed: topChunks.map((chunk) => chunk.source),
       };
     } catch (error) {
       console.error('Fallback search failed:', error);
