@@ -47,10 +47,11 @@ class KnowledgeBaseService {
   }
 
   private async buildKnowledgeBase() {
-    // ONLY load these sources:
+    // Load these sources:
     // 1. Page content (from pageContent.ts)
     // 2. H2H document
-    // 3. 3 user-provided documents
+    // 3. User-provided documents (including Workflows document)
+    // 4. Section 5 content (Active Workflows - Form Project) from courseContent.ts
     
     // 1. Add all page content
     Object.entries(pageContent).forEach(([pageNum, content]) => {
@@ -62,14 +63,14 @@ class KnowledgeBaseService {
       });
     });
 
-    // NOTE: Course content, quiz content, onboarding plan, and extracted data are EXCLUDED
-    // Only page content, H2H doc, and 3 user documents are loaded
-
     // 2. Load H2H document
     await this.loadH2HDocument();
 
-    // 3. Load the 3 user-provided documents
+    // 3. Load user-provided documents (including Workflows document)
     await this.loadUserDocuments();
+
+    // 4. Add Section 5 content (Active Workflows - Form Project) to knowledge base
+    await this.loadSection5Content();
   }
 
   // Load H2H document only
@@ -122,13 +123,14 @@ class KnowledgeBaseService {
     }
   }
 
-  // Load only the 3 user-provided documents
+  // Load user-provided documents (including Workflows document)
   private async loadUserDocuments() {
-    // Define the 3 specific documents to load
+    // Define the documents to load
     const userDocuments = [
       'EC Example Library - Part 1 (Prompt Errors & Model Actions).docx',
       'EC Example Library - Part 2 (Model Thoughts, Output, Infrastructure & Tool Errors).docx',
       'EC Example Library Recruitment test.docx',
+      'Workflows- Yutori Project (1).docx', // Add Workflows document for chatbot training
     ];
 
     const possibleDocPaths = [
@@ -197,6 +199,46 @@ class KnowledgeBaseService {
     }
 
     console.log(`📚 Knowledge base loaded: ${this.chunks.length} total chunks`);
+  }
+
+  // Load Section 5 content (Active Workflows - Form Project) from courseContent.ts
+  private async loadSection5Content() {
+    try {
+      const { courseContent } = await import('../data/courseContent');
+      const section5 = courseContent.section5;
+      
+      if (!section5) {
+        console.warn('⚠ Section 5 content not found in courseContent.ts');
+        return;
+      }
+
+      // Add section overview
+      this.chunks.push({
+        id: 'section5-overview',
+        content: `Section 5: ${section5.title}\n\n${section5.description}\n\nEstimated Duration: ${section5.estimatedDuration}\n\nTopics Covered:\n${section5.topics.map(t => `• ${t}`).join('\n')}`,
+        source: 'Section 5: Active Workflows - Form Project',
+        section: '5',
+        type: 'course',
+      });
+
+      // Add each activity's content as a separate chunk
+      section5.activities.forEach((activity, idx) => {
+        if (activity.content && activity.content.trim().length > 50) {
+          this.chunks.push({
+            id: `section5-activity-${idx + 1}`,
+            content: `${activity.name}\n\n${activity.content}`,
+            source: `Section 5: ${activity.name}`,
+            section: '5',
+            topic: activity.name.replace('Read: ', '').replace('Practice: ', ''),
+            type: 'course',
+          });
+        }
+      });
+
+      console.log(`✓ Loaded Section 5 content (${section5.activities.length} activities)`);
+    } catch (error) {
+      console.warn('⚠ Could not load Section 5 content:', error);
+    }
   }
 
   // REMOVED: loadCustomDocuments - we only load specific documents now

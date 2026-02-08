@@ -40,6 +40,13 @@ This guide covers multiple deployment options for your onboarding platform.
    SUPABASE_URL=your-supabase-url
    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
    SUPABASE_ANON_KEY=your-anon-key
+   
+   # SMTP Configuration (for email notifications)
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password
+   SMTP_FROM=noreply@autonex.com
    ```
 
 4. **Set Build Command**
@@ -220,6 +227,13 @@ FRONTEND_URL=https://your-frontend.vercel.app
 SUPABASE_URL=your-supabase-project-url
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_ANON_KEY=your-anon-key
+
+# SMTP Configuration (for email notifications)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=noreply@autonex.com
 ```
 
 ### Frontend (.env.local)

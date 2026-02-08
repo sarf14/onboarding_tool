@@ -4,20 +4,35 @@ import { config } from '../config/env';
 // Create reusable transporter
 let transporter: nodemailer.Transporter | null = null;
 
-function getTransporter() {
-  if (transporter) return transporter;
+async function getTransporter() {
+  if (transporter) {
+    console.log('[SMTP] Using existing transporter instance');
+    return transporter;
+  }
 
+  console.log('[SMTP] Initializing SMTP transporter...');
+  
   // Check if email is configured
   const smtpHost = process.env.SMTP_HOST;
   const smtpPort = process.env.SMTP_PORT;
   const smtpUser = process.env.SMTP_USER;
-  const smtpPassword = process.env.SMTP_PASSWORD;
+  const smtpPassword = process.env.SMTP_PASSWORD?.trim(); // Remove whitespace
   const smtpFrom = process.env.SMTP_FROM || smtpUser || 'noreply@autonex.com';
+
+  // Debug: Log configuration status (without exposing password)
+  console.log('[SMTP] Configuration check:');
+  console.log(`   SMTP_HOST: ${smtpHost ? '✅ Set' : '❌ Missing'}`);
+  console.log(`   SMTP_PORT: ${smtpPort || 'Using default 587'}`);
+  console.log(`   SMTP_USER: ${smtpUser ? '✅ Set (' + smtpUser + ')' : '❌ Missing'}`);
+  console.log(`   SMTP_PASSWORD: ${smtpPassword ? '✅ Set (' + smtpPassword.length + ' chars)' : '❌ Missing'}`);
+  console.log(`   SMTP_FROM: ${smtpFrom}`);
+  console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 
   // If no SMTP configured, use a test account (emails won't actually send)
   if (!smtpHost || !smtpUser || !smtpPassword) {
-    console.warn('⚠️  Email service not configured. Emails will be logged but not sent.');
-    console.warn('   Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM in .env');
+    console.warn('[SMTP] ⚠️  Email service not configured. Emails will be logged but not sent.');
+    console.warn('[SMTP]    Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM in backend/.env');
+    console.warn('[SMTP]    For deployed environments, set these as environment variables in your hosting platform');
     
     // Create a test transporter that logs emails
     transporter = nodemailer.createTransport({
@@ -30,8 +45,15 @@ function getTransporter() {
       },
     });
     
+    console.log('[SMTP] Created test transporter (emails will not be sent)');
     return transporter;
   }
+
+  console.log('[SMTP] Creating SMTP transporter with configuration:');
+  console.log(`   Host: ${smtpHost}`);
+  console.log(`   Port: ${smtpPort || '587'} (secure: ${smtpPort === '465'})`);
+  console.log(`   User: ${smtpUser}`);
+  console.log(`   Password length: ${smtpPassword.length} characters`);
 
   transporter = nodemailer.createTransport({
     host: smtpHost,
@@ -41,7 +63,36 @@ function getTransporter() {
       user: smtpUser,
       pass: smtpPassword,
     },
+    tls: {
+      rejectUnauthorized: false // Allow self-signed certificates if needed
+    },
+    debug: process.env.NODE_ENV === 'development', // Enable debug mode in development
+    logger: process.env.NODE_ENV === 'development', // Enable logging in development
   });
+
+  // Verify transporter configuration
+  console.log('[SMTP] Verifying SMTP connection...');
+  try {
+    const verifyResult = await transporter.verify();
+    console.log('[SMTP] ✅ SMTP connection verified successfully');
+    console.log(`[SMTP]    Host: ${smtpHost}:${smtpPort || '587'}`);
+    console.log(`[SMTP]    User: ${smtpUser}`);
+    console.log(`[SMTP]    Verification result:`, verifyResult);
+  } catch (error: any) {
+    console.error('[SMTP] ❌ SMTP verification failed:');
+    console.error(`[SMTP]    Error: ${error.message}`);
+    console.error(`[SMTP]    Code: ${error.code || 'N/A'}`);
+    console.error(`[SMTP]    Command: ${error.command || 'N/A'}`);
+    console.error(`[SMTP]    Response: ${error.response || 'N/A'}`);
+    console.error(`[SMTP]    ResponseCode: ${error.responseCode || 'N/A'}`);
+    if (error.stack) {
+      console.error(`[SMTP]    Stack: ${error.stack.substring(0, 500)}`);
+    }
+    console.error('[SMTP]    Please check your SMTP credentials in backend/.env');
+    console.error('[SMTP]    For Gmail: Make sure you\'re using an App Password (not your regular password)');
+    console.error('[SMTP]    App Password should be 16 characters (spaces are OK, they will be trimmed)');
+    console.error('[SMTP]    For deployed environments, ensure environment variables are set correctly');
+  }
 
   return transporter;
 }
@@ -60,7 +111,7 @@ export interface MentorAssignmentEmailData {
 }
 
 export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData): Promise<void> {
-  const transporter = getTransporter();
+  const transporter = await getTransporter();
   const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@autonex.com';
   // Use the provided portal URL or fallback to config
   const portalUrl = 'https://onboarding-tool-psi.vercel.app';
@@ -88,12 +139,16 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     return; // Exit early if not configured
   }
 
-  console.log('📧 Sending mentor assignment emails...');
-  console.log(`   Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
-  console.log(`   Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
+  console.log('[SMTP] 📧 Starting mentor assignment email process...');
+  console.log(`[SMTP]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
+  console.log(`[SMTP]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
+  console.log(`[SMTP]    Portal URL: ${portalUrl}`);
+  console.log(`[SMTP]    Login URL: ${loginUrl}`);
+  console.log(`[SMTP]    From address: ${smtpFrom}`);
 
   // Email to mentor
   if (data.mentorEmail) {
+    console.log(`[SMTP] Preparing email to mentor: ${data.mentorEmail}`);
     const mentorMailOptions = {
       from: smtpFrom,
       to: data.mentorEmail,
@@ -183,27 +238,52 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     };
 
     try {
+      console.log(`[SMTP] Attempting to send email to mentor: ${data.mentorEmail}`);
+      console.log(`[SMTP]    Subject: ${mentorMailOptions.subject}`);
+      console.log(`[SMTP]    From: ${mentorMailOptions.from}`);
+      console.log(`[SMTP]    To: ${mentorMailOptions.to}`);
+      
+      const startTime = Date.now();
       const info = await transporter.sendMail(mentorMailOptions);
-      console.log(`✅ Email sent successfully to mentor: ${data.mentorEmail}`);
-      console.log(`   Message ID: ${info.messageId}`);
+      const duration = Date.now() - startTime;
+      
+      console.log(`[SMTP] ✅ Email sent successfully to mentor: ${data.mentorEmail}`);
+      console.log(`[SMTP]    Message ID: ${info.messageId}`);
+      console.log(`[SMTP]    Response: ${info.response || 'N/A'}`);
+      console.log(`[SMTP]    Duration: ${duration}ms`);
+      
       if (process.env.NODE_ENV === 'development') {
-        console.log(`   Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        if (previewUrl) {
+          console.log(`[SMTP]    Preview URL: ${previewUrl}`);
+        }
       }
     } catch (error: any) {
-      console.error(`❌ Failed to send email to mentor ${data.mentorEmail}:`);
-      console.error(`   Error: ${error.message}`);
-      console.error(`   Code: ${error.code || 'N/A'}`);
+      console.error(`[SMTP] ❌ Failed to send email to mentor ${data.mentorEmail}:`);
+      console.error(`[SMTP]    Error message: ${error.message}`);
+      console.error(`[SMTP]    Error code: ${error.code || 'N/A'}`);
+      console.error(`[SMTP]    Error name: ${error.name || 'N/A'}`);
+      console.error(`[SMTP]    Command: ${error.command || 'N/A'}`);
+      console.error(`[SMTP]    Response: ${error.response || 'N/A'}`);
+      console.error(`[SMTP]    ResponseCode: ${error.responseCode || 'N/A'}`);
       if (error.response) {
-        console.error(`   Response: ${JSON.stringify(error.response)}`);
+        console.error(`[SMTP]    Full response: ${JSON.stringify(error.response, null, 2)}`);
       }
+      if (error.stack) {
+        console.error(`[SMTP]    Stack trace: ${error.stack.substring(0, 1000)}`);
+      }
+      console.error(`[SMTP]    SMTP Host: ${process.env.SMTP_HOST}`);
+      console.error(`[SMTP]    SMTP Port: ${process.env.SMTP_PORT}`);
+      console.error(`[SMTP]    SMTP User: ${process.env.SMTP_USER}`);
       // Don't throw - email failure shouldn't break mentor assignment
     }
   } else {
-    console.warn(`⚠️  Mentor ${data.mentorName} has no email address. Skipping email notification.`);
+    console.warn(`[SMTP] ⚠️  Mentor ${data.mentorName} has no email address. Skipping email notification.`);
   }
 
   // Email to mentee
   if (data.menteeEmail) {
+    console.log(`[SMTP] Preparing email to mentee: ${data.menteeEmail}`);
     const loginMethod = data.loginCredentials.email 
       ? `Email: ${data.loginCredentials.email}`
       : `Name: ${data.loginCredentials.name}`;
@@ -312,22 +392,48 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     };
 
     try {
+      console.log(`[SMTP] Attempting to send email to mentee: ${data.menteeEmail}`);
+      console.log(`[SMTP]    Subject: ${menteeMailOptions.subject}`);
+      console.log(`[SMTP]    From: ${menteeMailOptions.from}`);
+      console.log(`[SMTP]    To: ${menteeMailOptions.to}`);
+      
+      const startTime = Date.now();
       const info = await transporter.sendMail(menteeMailOptions);
-      console.log(`✅ Email sent successfully to mentee: ${data.menteeEmail}`);
-      console.log(`   Message ID: ${info.messageId}`);
+      const duration = Date.now() - startTime;
+      
+      console.log(`[SMTP] ✅ Email sent successfully to mentee: ${data.menteeEmail}`);
+      console.log(`[SMTP]    Message ID: ${info.messageId}`);
+      console.log(`[SMTP]    Response: ${info.response || 'N/A'}`);
+      console.log(`[SMTP]    Duration: ${duration}ms`);
+      
       if (process.env.NODE_ENV === 'development') {
-        console.log(`   Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        if (previewUrl) {
+          console.log(`[SMTP]    Preview URL: ${previewUrl}`);
+        }
       }
     } catch (error: any) {
-      console.error(`❌ Failed to send email to mentee ${data.menteeEmail}:`);
-      console.error(`   Error: ${error.message}`);
-      console.error(`   Code: ${error.code || 'N/A'}`);
+      console.error(`[SMTP] ❌ Failed to send email to mentee ${data.menteeEmail}:`);
+      console.error(`[SMTP]    Error message: ${error.message}`);
+      console.error(`[SMTP]    Error code: ${error.code || 'N/A'}`);
+      console.error(`[SMTP]    Error name: ${error.name || 'N/A'}`);
+      console.error(`[SMTP]    Command: ${error.command || 'N/A'}`);
+      console.error(`[SMTP]    Response: ${error.response || 'N/A'}`);
+      console.error(`[SMTP]    ResponseCode: ${error.responseCode || 'N/A'}`);
       if (error.response) {
-        console.error(`   Response: ${JSON.stringify(error.response)}`);
+        console.error(`[SMTP]    Full response: ${JSON.stringify(error.response, null, 2)}`);
       }
+      if (error.stack) {
+        console.error(`[SMTP]    Stack trace: ${error.stack.substring(0, 1000)}`);
+      }
+      console.error(`[SMTP]    SMTP Host: ${process.env.SMTP_HOST}`);
+      console.error(`[SMTP]    SMTP Port: ${process.env.SMTP_PORT}`);
+      console.error(`[SMTP]    SMTP User: ${process.env.SMTP_USER}`);
       // Don't throw - email failure shouldn't break mentor assignment
     }
   } else {
-    console.warn(`⚠️  Mentee ${data.menteeName} has no email address. Skipping email notification.`);
+    console.warn(`[SMTP] ⚠️  Mentee ${data.menteeName} has no email address. Skipping email notification.`);
   }
+  
+  console.log('[SMTP] 📧 Mentor assignment email process completed');
 }
