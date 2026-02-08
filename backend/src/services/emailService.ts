@@ -110,6 +110,10 @@ async function getTransporter() {
     },
     debug: process.env.NODE_ENV === 'development', // Enable debug mode in development
     logger: process.env.NODE_ENV === 'development', // Enable logging in development
+    // Connection timeout settings
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000, // 10 seconds
+    socketTimeout: 10000, // 10 seconds
   };
 
   // Only add custom lookup and socket options for Gmail
@@ -127,8 +131,17 @@ async function getTransporter() {
   if (resolvedHost !== smtpHost) {
     console.log(`[SMTP]    Using resolved host: ${resolvedHost} (original: ${smtpHost})`);
   }
+  console.log(`[SMTP]    Connection timeout: 10 seconds`);
+  console.log(`[SMTP]    Socket timeout: 10 seconds`);
+  
   try {
-    const verifyResult = await transporter.verify();
+    // Set a timeout for the verification itself
+    const verifyPromise = transporter.verify();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('SMTP verification timeout after 15 seconds')), 15000)
+    );
+    
+    const verifyResult = await Promise.race([verifyPromise, timeoutPromise]);
     console.log('[SMTP] ✅ SMTP connection verified successfully');
     console.log(`[SMTP]    Host: ${resolvedHost}:${smtpPort || '587'}`);
     console.log(`[SMTP]    User: ${smtpUser}`);
@@ -150,9 +163,25 @@ async function getTransporter() {
       console.error('[SMTP]    Solution: The code has been updated to force IPv4 (family: 4).');
       console.error('[SMTP]    Please redeploy your backend to apply the fix.');
     }
+    
+    // Check if it's a connection timeout
+    if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+      console.error('[SMTP]    ⚠️  Connection timeout detected!');
+      console.error('[SMTP]    Possible causes:');
+      console.error('[SMTP]    1. Firewall blocking SMTP port (587 or 465)');
+      console.error('[SMTP]    2. Network restrictions on deployment platform');
+      console.error('[SMTP]    3. SMTP server is unreachable from this network');
+      console.error('[SMTP]    Solutions:');
+      console.error('[SMTP]    - Try using Resend API instead of SMTP (recommended)');
+      console.error('[SMTP]    - Check if port 587/465 is allowed in firewall');
+      console.error('[SMTP]    - Consider using a different SMTP provider');
+      console.error('[SMTP]    - For Resend: Use their API endpoint instead of SMTP');
+    }
+    
     console.error('[SMTP]    Please check your SMTP credentials in backend/.env');
     console.error('[SMTP]    For Gmail: Make sure you\'re using an App Password (not your regular password)');
     console.error('[SMTP]    App Password should be 16 characters (spaces are OK, they will be trimmed)');
+    console.error('[SMTP]    For Resend: Consider using their API instead of SMTP if SMTP is blocked');
     console.error('[SMTP]    For deployed environments, ensure environment variables are set correctly');
   }
 
