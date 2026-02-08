@@ -1,6 +1,9 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/env';
 import dns from 'dns';
+import { promisify } from 'util';
+
+const resolve4 = promisify(dns.resolve4);
 
 // Create reusable transporter
 let transporter: nodemailer.Transporter | null = null;
@@ -58,26 +61,41 @@ async function getTransporter() {
 
   // Force IPv4 connections to avoid IPv6 connectivity issues in deployed environments
   // Some hosting platforms (Railway, Render, etc.) don't support IPv6
+  // For Gmail, resolve to IPv4 address directly before creating transporter
+  let resolvedHost = smtpHost;
+  
+  if (smtpHost === 'smtp.gmail.com') {
+    console.log('[SMTP] Gmail detected - resolving to IPv4 address to avoid IPv6 issues...');
+    try {
+      // Resolve Gmail SMTP to IPv4 address before creating transporter
+      const addresses = await resolve4(smtpHost);
+      if (addresses && addresses.length > 0) {
+        resolvedHost = addresses[0];
+        console.log(`[SMTP] ✅ Resolved smtp.gmail.com to IPv4: ${resolvedHost}`);
+      } else {
+        console.warn(`[SMTP] ⚠️  Could not resolve IPv4, will use hostname with IPv4-only lookup`);
+      }
+    } catch (resolveError: any) {
+      console.warn(`[SMTP] ⚠️  DNS resolution error, will use custom lookup:`, resolveError.message);
+      // Continue with hostname and custom lookup
+    }
+  }
+
   // Use custom lookup function to force IPv4 resolution
   const customLookup = (hostname: string, options: any, callback: any) => {
-    console.log(`[SMTP] Resolving hostname ${hostname} using IPv4 only...`);
-    dns.lookup(hostname, { family: 4 }, (err, address, family) => {
+    console.log(`[SMTP] Custom DNS lookup for ${hostname} (forcing IPv4)...`);
+    dns.lookup(hostname, { family: 4, all: false }, (err, address, family) => {
       if (err) {
         console.error(`[SMTP] DNS lookup failed for ${hostname}:`, err);
         return callback(err);
       }
-      console.log(`[SMTP] Resolved ${hostname} to IPv4 address: ${address}`);
+      console.log(`[SMTP] ✅ Resolved ${hostname} to IPv4 address: ${address} (family: ${family})`);
       callback(null, address, family);
     });
   };
 
-  // For Gmail specifically, we can also use IPv4 address as fallback
-  if (smtpHost === 'smtp.gmail.com') {
-    console.log('[SMTP] Gmail detected - forcing IPv4 connection to avoid IPv6 issues');
-  }
-
   const transporterConfig: any = {
-    host: smtpHost,
+    host: resolvedHost,
     port: parseInt(smtpPort || '587', 10),
     secure: smtpPort === '465',
     auth: {
@@ -91,16 +109,21 @@ async function getTransporter() {
     logger: process.env.NODE_ENV === 'development', // Enable logging in development
     // Use custom lookup to force IPv4 resolution
     lookup: customLookup,
+    // Additional socket options to force IPv4
+    socket: {
+      family: 4, // Force IPv4
+    },
   };
 
   transporter = nodemailer.createTransport(transporterConfig);
 
   // Verify transporter configuration
   console.log('[SMTP] Verifying SMTP connection...');
+  console.log(`[SMTP]    Using host: ${resolvedHost} (original: ${smtpHost})`);
   try {
     const verifyResult = await transporter.verify();
     console.log('[SMTP] ✅ SMTP connection verified successfully');
-    console.log(`[SMTP]    Host: ${smtpHost}:${smtpPort || '587'}`);
+    console.log(`[SMTP]    Host: ${resolvedHost}:${smtpPort || '587'}`);
     console.log(`[SMTP]    User: ${smtpUser}`);
     console.log(`[SMTP]    Verification result:`, verifyResult);
   } catch (error: any) {
