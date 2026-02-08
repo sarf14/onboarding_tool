@@ -2,8 +2,17 @@ import nodemailer from 'nodemailer';
 import { config } from '../config/env';
 import dns from 'dns';
 import { promisify } from 'util';
+import { Resend } from 'resend';
 
 const resolve4 = promisify(dns.resolve4);
+
+// Initialize Resend API client (if API key is available)
+let resendClient: Resend | null = null;
+const resendApiKey = process.env.RESEND_API_KEY;
+if (resendApiKey) {
+  resendClient = new Resend(resendApiKey);
+  console.log('[Email] ✅ Resend API client initialized (using API instead of SMTP)');
+}
 
 // Create reusable transporter
 let transporter: nodemailer.Transporter | null = null;
@@ -202,11 +211,60 @@ export interface MentorAssignmentEmailData {
 }
 
 export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData): Promise<void> {
-  const transporter = await getTransporter();
-  const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@autonex.com';
-  // Use the provided portal URL or fallback to config
   const portalUrl = 'https://onboarding-tool-psi.vercel.app';
   const loginUrl = `${portalUrl}/login`;
+  const fromEmail = process.env.SMTP_FROM || 'onboarding@resend.dev';
+
+  // Check if Resend API is available (preferred method - no SMTP port blocking)
+  if (resendClient) {
+    console.log('[Email] 📧 Using Resend API (no SMTP port needed)...');
+    console.log(`[Email]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
+    console.log(`[Email]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
+    
+    // Send email to mentor using Resend API
+    if (data.mentorEmail) {
+      try {
+        const mentorResult = await resendClient.emails.send({
+          from: fromEmail,
+          to: data.mentorEmail,
+          subject: `New Mentee Assigned: ${data.menteeName}`,
+          html: getMentorEmailHTML(data, loginUrl),
+          text: getMentorEmailText(data, loginUrl),
+        });
+        console.log(`[Email] ✅ Email sent successfully to mentor via Resend API: ${data.mentorEmail}`);
+        console.log(`[Email]    Message ID: ${mentorResult.data?.id || 'N/A'}`);
+      } catch (error: any) {
+        console.error(`[Email] ❌ Failed to send email to mentor via Resend API:`, error.message);
+      }
+    }
+
+    // Send email to mentee using Resend API
+    if (data.menteeEmail) {
+      try {
+        const loginMethod = data.loginCredentials.email 
+          ? `Email: ${data.loginCredentials.email}`
+          : `Name: ${data.loginCredentials.name}`;
+        
+        const menteeResult = await resendClient.emails.send({
+          from: fromEmail,
+          to: data.menteeEmail,
+          subject: `Welcome! Your Mentor Assignment - ${data.mentorName}`,
+          html: getMenteeEmailHTML(data, loginUrl, loginMethod),
+          text: getMenteeEmailText(data, loginUrl, loginMethod),
+        });
+        console.log(`[Email] ✅ Email sent successfully to mentee via Resend API: ${data.menteeEmail}`);
+        console.log(`[Email]    Message ID: ${menteeResult.data?.id || 'N/A'}`);
+      } catch (error: any) {
+        console.error(`[Email] ❌ Failed to send email to mentee via Resend API:`, error.message);
+      }
+    }
+    
+    return; // Exit early - Resend API handled emails
+  }
+
+  // Fallback to SMTP if Resend API is not available
+  const transporter = await getTransporter();
+  const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@autonex.com';
 
   // Check if SMTP is properly configured
   const smtpHost = process.env.SMTP_HOST;
@@ -216,12 +274,9 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
 
   if (!isConfigured) {
     console.warn('⚠️  EMAIL SERVICE NOT CONFIGURED');
-    console.warn('   To enable email sending, add these to backend/.env:');
-    console.warn('   SMTP_HOST=smtp.gmail.com (or your SMTP server)');
-    console.warn('   SMTP_PORT=587');
-    console.warn('   SMTP_USER=your-email@gmail.com');
-    console.warn('   SMTP_PASSWORD=your-app-password');
-    console.warn('   SMTP_FROM=noreply@autonex.com (optional)');
+    console.warn('   To enable email sending, add one of these to backend/.env:');
+    console.warn('   Option 1 (Recommended): RESEND_API_KEY=re_... (uses HTTPS, no port blocking)');
+    console.warn('   Option 2: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD');
     console.warn('');
     console.warn('   Email details that would be sent:');
     console.warn(`   - To Mentor (${data.mentorEmail || 'N/A'}): New mentee ${data.menteeName} assigned`);
@@ -230,102 +285,214 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     return; // Exit early if not configured
   }
 
-  console.log('[SMTP] 📧 Starting mentor assignment email process...');
+  console.log('[SMTP] 📧 Starting mentor assignment email process (using SMTP)...');
   console.log(`[SMTP]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
   console.log(`[SMTP]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
   console.log(`[SMTP]    Portal URL: ${portalUrl}`);
   console.log(`[SMTP]    Login URL: ${loginUrl}`);
   console.log(`[SMTP]    From address: ${smtpFrom}`);
 
-  // Email to mentor
+  // Helper functions for email content
+  function getMentorEmailHTML(data: MentorAssignmentEmailData, loginUrl: string): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #163791; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 24px;">New Mentee Assignment</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border: 1px solid #ddd;">
+          <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hello <strong>${data.mentorName}</strong>,</p>
+          <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
+            You have been assigned a new mentee: <strong style="color: #163791;">${data.menteeName}</strong>.
+          </p>
+          <p style="font-size: 16px; color: #333; margin-bottom: 30px;">
+            As their mentor, you will guide them through the onboarding process, track their progress, and provide support as they complete their training sections.
+          </p>
+          
+          <div style="background: white; padding: 20px; border-left: 4px solid #163791; margin: 20px 0;">
+            <h3 style="color: #163791; margin-top: 0;">Your Responsibilities:</h3>
+            <ul style="color: #555; line-height: 1.8;">
+              <li>Monitor mentee progress through all training sections</li>
+              <li>Provide guidance and answer questions</li>
+              <li>Review quiz scores and learning outcomes</li>
+              <li>Support mentee success throughout the program</li>
+            </ul>
+          </div>
+          
+          <div style="background: #fff3cd; padding: 20px; border-radius: 4px; margin: 20px 0; border: 1px solid #ffc107;">
+            <h3 style="margin-top: 0; color: #856404;">Mentee Contact Information:</h3>
+            <p style="margin: 10px 0; color: #856404; font-size: 16px;">
+              <strong>Name:</strong> ${data.menteeName}
+            </p>
+            <p style="margin: 10px 0; color: #856404; font-size: 16px;">
+              <strong>Email:</strong> ${data.menteeEmail || 'Not provided'}
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${loginUrl}" 
+               style="display: inline-block; padding: 14px 32px; background: #163791; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">
+              Access Mentor Portal
+            </a>
+          </div>
+          
+          <div style="background: #e8f4f8; padding: 15px; border-radius: 4px; margin-top: 20px;">
+            <p style="margin: 0; color: #555; font-size: 14px;">
+              <strong>Portal URL:</strong> <a href="${loginUrl}" style="color: #163791;">${loginUrl}</a>
+            </p>
+            <p style="margin: 10px 0 0 0; color: #555; font-size: 14px;">
+              <strong>Login:</strong> Use your name and password to access the portal
+            </p>
+          </div>
+        </div>
+        <div style="background: #f5f5f5; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #ddd;">
+          <p style="margin: 0; color: #999; font-size: 12px;">
+            This is an automated notification from Autonex Onboarding Platform
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  function getMentorEmailText(data: MentorAssignmentEmailData, loginUrl: string): string {
+    return `
+      New Mentee Assignment
+        
+      Hello ${data.mentorName},
+      
+      You have been assigned a new mentee: ${data.menteeName}.
+      
+      As their mentor, you will guide them through the onboarding process, track their progress, and provide support as they complete their training sections.
+      
+      Your Responsibilities:
+      - Monitor mentee progress through all training sections
+      - Provide guidance and answer questions
+      - Review quiz scores and learning outcomes
+      - Support mentee success throughout the program
+      
+      Mentee Contact Information:
+      Name: ${data.menteeName}
+      Email: ${data.menteeEmail || 'Not provided'}
+      
+      Access the Mentor Portal: ${loginUrl}
+      Portal URL: ${loginUrl}
+      Login: Use your name and password to access the portal
+      
+      This is an automated notification from Autonex Onboarding Platform
+    `;
+  }
+
+  function getMenteeEmailHTML(data: MentorAssignmentEmailData, loginUrl: string, loginMethod: string): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #163791; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 24px;">Welcome to Autonex Onboarding Platform</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border: 1px solid #ddd;">
+          <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hello <strong>${data.menteeName}</strong>,</p>
+          <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
+            Great news! You have been assigned a mentor: <strong style="color: #163791;">${data.mentorName}</strong>.
+          </p>
+          <p style="font-size: 16px; color: #333; margin-bottom: 30px;">
+            Your mentor will guide you through the onboarding process, track your progress, answer your questions, and help you succeed in completing all training sections.
+          </p>
+          
+          <div style="background: white; padding: 20px; border-left: 4px solid #163791; margin: 20px 0;">
+            <h3 style="color: #163791; margin-top: 0;">What to Expect:</h3>
+            <ul style="color: #555; line-height: 1.8;">
+              <li>Complete 5 training sections covering annotation fundamentals</li>
+              <li>Take quizzes at the end of each section (90% passing score required)</li>
+              <li>Receive guidance and support from your mentor</li>
+              <li>Track your progress through the dashboard</li>
+            </ul>
+          </div>
+          
+          <div style="background: #fff3cd; padding: 20px; border-radius: 4px; margin: 20px 0; border: 1px solid #ffc107;">
+            <h3 style="margin-top: 0; color: #856404;">Your Login Credentials:</h3>
+            <p style="margin: 10px 0; color: #856404; font-size: 16px;">
+              <strong>${loginMethod}</strong>
+            </p>
+            <p style="margin: 10px 0; color: #856404; font-size: 16px;">
+              <strong>Password:</strong> Please use your existing password. If you need assistance or have forgotten your password, please contact your administrator.
+            </p>
+          </div>
+          
+          <div style="background: #e8f4f8; padding: 20px; border-radius: 4px; margin: 20px 0; border: 1px solid #163791;">
+            <h3 style="margin-top: 0; color: #163791;">Mentor Contact Information:</h3>
+            <p style="margin: 10px 0; color: #555; font-size: 16px;">
+              <strong>Name:</strong> ${data.mentorName}
+            </p>
+            <p style="margin: 10px 0; color: #555; font-size: 16px;">
+              <strong>Email:</strong> ${data.mentorEmail || 'Not provided'}
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${loginUrl}" 
+               style="display: inline-block; padding: 14px 32px; background: #163791; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">
+              Log In to Portal
+            </a>
+          </div>
+          
+          <div style="background: #e8f4f8; padding: 15px; border-radius: 4px; margin-top: 20px;">
+            <p style="margin: 0; color: #555; font-size: 14px;">
+              <strong>Portal URL:</strong> <a href="${loginUrl}" style="color: #163791;">${loginUrl}</a>
+            </p>
+            <p style="margin: 10px 0 0 0; color: #555; font-size: 14px;">
+              <strong>Need Help?</strong> Contact your mentor (${data.mentorName}) at ${data.mentorEmail || 'contact admin'} or the admin team for assistance.
+            </p>
+          </div>
+        </div>
+        <div style="background: #f5f5f5; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #ddd;">
+          <p style="margin: 0; color: #999; font-size: 12px;">
+            This is an automated notification from Autonex Onboarding Platform
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  function getMenteeEmailText(data: MentorAssignmentEmailData, loginUrl: string, loginMethod: string): string {
+    return `
+      Welcome to Autonex Onboarding Platform
+      
+      Hello ${data.menteeName},
+      
+      Great news! You have been assigned a mentor: ${data.mentorName}.
+      
+      Your mentor will guide you through the onboarding process, track your progress, answer your questions, and help you succeed in completing all training sections.
+      
+      What to Expect:
+      - Complete 5 training sections covering annotation fundamentals
+      - Take quizzes at the end of each section (90% passing score required)
+      - Receive guidance and support from your mentor
+      - Track your progress through the dashboard
+      
+      Your Login Credentials:
+      ${loginMethod}
+      Password: Please use your existing password. If you need assistance or have forgotten your password, please contact your administrator.
+      
+      Mentor Contact Information:
+      Name: ${data.mentorName}
+      Email: ${data.mentorEmail || 'Not provided'}
+      
+      Log In to Portal: ${loginUrl}
+      Portal URL: ${loginUrl}
+      
+      Need Help? Contact your mentor (${data.mentorName}) at ${data.mentorEmail || 'contact admin'} or the admin team for assistance.
+      
+      This is an automated notification from Autonex Onboarding Platform
+    `;
+  }
+
+  // Email to mentor (SMTP fallback)
   if (data.mentorEmail) {
     console.log(`[SMTP] Preparing email to mentor: ${data.mentorEmail}`);
     const mentorMailOptions = {
       from: smtpFrom,
       to: data.mentorEmail,
       subject: `New Mentee Assigned: ${data.menteeName}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: #163791; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="margin: 0; font-size: 24px;">New Mentee Assignment</h1>
-          </div>
-          <div style="background: #f9f9f9; padding: 30px; border: 1px solid #ddd;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hello <strong>${data.mentorName}</strong>,</p>
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              You have been assigned a new mentee: <strong style="color: #163791;">${data.menteeName}</strong>.
-            </p>
-            <p style="font-size: 16px; color: #333; margin-bottom: 30px;">
-              As their mentor, you will guide them through the onboarding process, track their progress, and provide support as they complete their training sections.
-            </p>
-            
-            <div style="background: white; padding: 20px; border-left: 4px solid #163791; margin: 20px 0;">
-              <h3 style="color: #163791; margin-top: 0;">Your Responsibilities:</h3>
-              <ul style="color: #555; line-height: 1.8;">
-                <li>Monitor mentee progress through all training sections</li>
-                <li>Provide guidance and answer questions</li>
-                <li>Review quiz scores and learning outcomes</li>
-                <li>Support mentee success throughout the program</li>
-              </ul>
-            </div>
-            
-            <div style="background: #fff3cd; padding: 20px; border-radius: 4px; margin: 20px 0; border: 1px solid #ffc107;">
-              <h3 style="margin-top: 0; color: #856404;">Mentee Contact Information:</h3>
-              <p style="margin: 10px 0; color: #856404; font-size: 16px;">
-                <strong>Name:</strong> ${data.menteeName}
-              </p>
-              <p style="margin: 10px 0; color: #856404; font-size: 16px;">
-                <strong>Email:</strong> ${data.menteeEmail || 'Not provided'}
-              </p>
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${loginUrl}" 
-                 style="display: inline-block; padding: 14px 32px; background: #163791; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">
-                Access Mentor Portal
-              </a>
-            </div>
-            
-            <div style="background: #e8f4f8; padding: 15px; border-radius: 4px; margin-top: 20px;">
-              <p style="margin: 0; color: #555; font-size: 14px;">
-                <strong>Portal URL:</strong> <a href="${loginUrl}" style="color: #163791;">${loginUrl}</a>
-              </p>
-              <p style="margin: 10px 0 0 0; color: #555; font-size: 14px;">
-                <strong>Login:</strong> Use your name and password to access the portal
-              </p>
-            </div>
-          </div>
-          <div style="background: #f5f5f5; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #ddd;">
-            <p style="margin: 0; color: #999; font-size: 12px;">
-              This is an automated notification from Autonex Onboarding Platform
-            </p>
-          </div>
-        </div>
-      `,
-      text: `
-        New Mentee Assignment
-        
-        Hello ${data.mentorName},
-        
-        You have been assigned a new mentee: ${data.menteeName}.
-        
-        As their mentor, you will guide them through the onboarding process, track their progress, and provide support as they complete their training sections.
-        
-        Your Responsibilities:
-        - Monitor mentee progress through all training sections
-        - Provide guidance and answer questions
-        - Review quiz scores and learning outcomes
-        - Support mentee success throughout the program
-        
-        Mentee Contact Information:
-        Name: ${data.menteeName}
-        Email: ${data.menteeEmail || 'Not provided'}
-        
-        Access the Mentor Portal: ${loginUrl}
-        Portal URL: ${loginUrl}
-        Login: Use your name and password to access the portal
-        
-        This is an automated notification from Autonex Onboarding Platform
-      `,
+      html: getMentorEmailHTML(data, loginUrl),
+      text: getMentorEmailText(data, loginUrl),
     };
 
     try {
@@ -372,7 +539,7 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     console.warn(`[SMTP] ⚠️  Mentor ${data.mentorName} has no email address. Skipping email notification.`);
   }
 
-  // Email to mentee
+  // Email to mentee (SMTP fallback)
   if (data.menteeEmail) {
     console.log(`[SMTP] Preparing email to mentee: ${data.menteeEmail}`);
     const loginMethod = data.loginCredentials.email 
@@ -383,103 +550,8 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
       from: smtpFrom,
       to: data.menteeEmail,
       subject: `Welcome! Your Mentor Assignment - ${data.mentorName}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: #163791; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="margin: 0; font-size: 24px;">Welcome to Autonex Onboarding Platform</h1>
-          </div>
-          <div style="background: #f9f9f9; padding: 30px; border: 1px solid #ddd;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hello <strong>${data.menteeName}</strong>,</p>
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              Great news! You have been assigned a mentor: <strong style="color: #163791;">${data.mentorName}</strong>.
-            </p>
-            <p style="font-size: 16px; color: #333; margin-bottom: 30px;">
-              Your mentor will guide you through the onboarding process, track your progress, answer your questions, and help you succeed in completing all training sections.
-            </p>
-            
-            <div style="background: white; padding: 20px; border-left: 4px solid #163791; margin: 20px 0;">
-              <h3 style="color: #163791; margin-top: 0;">What to Expect:</h3>
-              <ul style="color: #555; line-height: 1.8;">
-                <li>Complete 5 training sections covering annotation fundamentals</li>
-                <li>Take quizzes at the end of each section (90% passing score required)</li>
-                <li>Receive guidance and support from your mentor</li>
-                <li>Track your progress through the dashboard</li>
-              </ul>
-            </div>
-            
-            <div style="background: #fff3cd; padding: 20px; border-radius: 4px; margin: 20px 0; border: 1px solid #ffc107;">
-              <h3 style="margin-top: 0; color: #856404;">Your Login Credentials:</h3>
-              <p style="margin: 10px 0; color: #856404; font-size: 16px;">
-                <strong>${loginMethod}</strong>
-              </p>
-              <p style="margin: 10px 0; color: #856404; font-size: 16px;">
-                <strong>Password:</strong> Please use your existing password. If you need assistance or have forgotten your password, please contact your administrator.
-              </p>
-            </div>
-            
-            <div style="background: #e8f4f8; padding: 20px; border-radius: 4px; margin: 20px 0; border: 1px solid #163791;">
-              <h3 style="margin-top: 0; color: #163791;">Mentor Contact Information:</h3>
-              <p style="margin: 10px 0; color: #555; font-size: 16px;">
-                <strong>Name:</strong> ${data.mentorName}
-              </p>
-              <p style="margin: 10px 0; color: #555; font-size: 16px;">
-                <strong>Email:</strong> ${data.mentorEmail || 'Not provided'}
-              </p>
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${loginUrl}" 
-                 style="display: inline-block; padding: 14px 32px; background: #163791; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">
-                Log In to Portal
-              </a>
-            </div>
-            
-            <div style="background: #e8f4f8; padding: 15px; border-radius: 4px; margin-top: 20px;">
-              <p style="margin: 0; color: #555; font-size: 14px;">
-                <strong>Portal URL:</strong> <a href="${loginUrl}" style="color: #163791;">${loginUrl}</a>
-              </p>
-              <p style="margin: 10px 0 0 0; color: #555; font-size: 14px;">
-                <strong>Need Help?</strong> Contact your mentor (${data.mentorName}) at ${data.mentorEmail || 'contact admin'} or the admin team for assistance.
-              </p>
-            </div>
-          </div>
-          <div style="background: #f5f5f5; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #ddd;">
-            <p style="margin: 0; color: #999; font-size: 12px;">
-              This is an automated notification from Autonex Onboarding Platform
-            </p>
-          </div>
-        </div>
-      `,
-      text: `
-        Welcome to Autonex Onboarding Platform
-        
-        Hello ${data.menteeName},
-        
-        Great news! You have been assigned a mentor: ${data.mentorName}.
-        
-        Your mentor will guide you through the onboarding process, track your progress, answer your questions, and help you succeed in completing all training sections.
-        
-        What to Expect:
-        - Complete 5 training sections covering annotation fundamentals
-        - Take quizzes at the end of each section (90% passing score required)
-        - Receive guidance and support from your mentor
-        - Track your progress through the dashboard
-        
-        Your Login Credentials:
-        ${loginMethod}
-        Password: Please use your existing password. If you need assistance or have forgotten your password, please contact your administrator.
-        
-        Mentor Contact Information:
-        Name: ${data.mentorName}
-        Email: ${data.mentorEmail || 'Not provided'}
-        
-        Log In to Portal: ${loginUrl}
-        Portal URL: ${loginUrl}
-        
-        Need Help? Contact your mentor (${data.mentorName}) at ${data.mentorEmail || 'contact admin'} or the admin team for assistance.
-        
-        This is an automated notification from Autonex Onboarding Platform
-      `,
+      html: getMenteeEmailHTML(data, loginUrl, loginMethod),
+      text: getMenteeEmailText(data, loginUrl, loginMethod),
     };
 
     try {
