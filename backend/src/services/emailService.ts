@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/env';
+import dns from 'dns';
 
 // Create reusable transporter
 let transporter: nodemailer.Transporter | null = null;
@@ -57,6 +58,24 @@ async function getTransporter() {
 
   // Force IPv4 connections to avoid IPv6 connectivity issues in deployed environments
   // Some hosting platforms (Railway, Render, etc.) don't support IPv6
+  // Use custom lookup function to force IPv4 resolution
+  const customLookup = (hostname: string, options: any, callback: any) => {
+    console.log(`[SMTP] Resolving hostname ${hostname} using IPv4 only...`);
+    dns.lookup(hostname, { family: 4 }, (err, address, family) => {
+      if (err) {
+        console.error(`[SMTP] DNS lookup failed for ${hostname}:`, err);
+        return callback(err);
+      }
+      console.log(`[SMTP] Resolved ${hostname} to IPv4 address: ${address}`);
+      callback(null, address, family);
+    });
+  };
+
+  // For Gmail specifically, we can also use IPv4 address as fallback
+  if (smtpHost === 'smtp.gmail.com') {
+    console.log('[SMTP] Gmail detected - forcing IPv4 connection to avoid IPv6 issues');
+  }
+
   const transporterConfig: any = {
     host: smtpHost,
     port: parseInt(smtpPort || '587', 10),
@@ -70,15 +89,9 @@ async function getTransporter() {
     },
     debug: process.env.NODE_ENV === 'development', // Enable debug mode in development
     logger: process.env.NODE_ENV === 'development', // Enable logging in development
-    // Force IPv4 to avoid ENETUNREACH errors in environments without IPv6 support
-    family: 4, // Use IPv4 only
+    // Use custom lookup to force IPv4 resolution
+    lookup: customLookup,
   };
-
-  // For Gmail specifically, we can also use IPv4 address as fallback
-  // But family: 4 should be sufficient
-  if (smtpHost === 'smtp.gmail.com') {
-    console.log('[SMTP] Gmail detected - forcing IPv4 connection to avoid IPv6 issues');
-  }
 
   transporter = nodemailer.createTransport(transporterConfig);
 
