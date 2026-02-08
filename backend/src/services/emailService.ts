@@ -55,7 +55,9 @@ async function getTransporter() {
   console.log(`   User: ${smtpUser}`);
   console.log(`   Password length: ${smtpPassword.length} characters`);
 
-  transporter = nodemailer.createTransport({
+  // Force IPv4 connections to avoid IPv6 connectivity issues in deployed environments
+  // Some hosting platforms (Railway, Render, etc.) don't support IPv6
+  const transporterConfig: any = {
     host: smtpHost,
     port: parseInt(smtpPort || '587', 10),
     secure: smtpPort === '465',
@@ -68,7 +70,17 @@ async function getTransporter() {
     },
     debug: process.env.NODE_ENV === 'development', // Enable debug mode in development
     logger: process.env.NODE_ENV === 'development', // Enable logging in development
-  });
+    // Force IPv4 to avoid ENETUNREACH errors in environments without IPv6 support
+    family: 4, // Use IPv4 only
+  };
+
+  // For Gmail specifically, we can also use IPv4 address as fallback
+  // But family: 4 should be sufficient
+  if (smtpHost === 'smtp.gmail.com') {
+    console.log('[SMTP] Gmail detected - forcing IPv4 connection to avoid IPv6 issues');
+  }
+
+  transporter = nodemailer.createTransport(transporterConfig);
 
   // Verify transporter configuration
   console.log('[SMTP] Verifying SMTP connection...');
@@ -87,6 +99,13 @@ async function getTransporter() {
     console.error(`[SMTP]    ResponseCode: ${error.responseCode || 'N/A'}`);
     if (error.stack) {
       console.error(`[SMTP]    Stack: ${error.stack.substring(0, 500)}`);
+    }
+    // Check if it's an IPv6 connectivity issue
+    if (error.code === 'ESOCKET' && error.message?.includes('ENETUNREACH') && error.message?.includes('::')) {
+      console.error('[SMTP]    ⚠️  IPv6 connectivity issue detected!');
+      console.error('[SMTP]    The deployment environment may not support IPv6 connections.');
+      console.error('[SMTP]    Solution: The code has been updated to force IPv4 (family: 4).');
+      console.error('[SMTP]    Please redeploy your backend to apply the fix.');
     }
     console.error('[SMTP]    Please check your SMTP credentials in backend/.env');
     console.error('[SMTP]    For Gmail: Make sure you\'re using an App Password (not your regular password)');
