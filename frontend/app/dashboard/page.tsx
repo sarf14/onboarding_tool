@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
+import EmailPromptModal from '../components/EmailPromptModal';
 
 interface Section {
   id: string;
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const [overallProgress, setOverallProgress] = useState(0);
   const [currentSection, setCurrentSection] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -142,11 +144,11 @@ export default function DashboardPage() {
     // If progress uses 'day', map it to section
     const section = p.section || p.day || 1;
     return { ...p, section };
-  }).filter((p: any) => p.section <= 4); // Only show sections 1-4
+  }).filter((p: any) => p.section <= 5); // Show sections 1-5
 
   const completedSections = mappedProgress.filter((p: any) => p.status === 'COMPLETED').length;
   const inProgressSections = mappedProgress.filter((p: any) => p.status === 'IN_PROGRESS').length;
-  const totalSections = 4;
+  const totalSections = 5;
   const remainingSections = totalSections - completedSections - inProgressSections;
   const currentSectionNum = mappedProgress.find((p: any) => p.status === 'IN_PROGRESS')?.section || currentSection;
   const isAdmin = user?.roles?.includes('ADMIN');
@@ -231,7 +233,36 @@ export default function DashboardPage() {
               opacity: 0.9
             }}>ONBOARDING</div>
           </div>
-          <div style={{ display: 'flex', gap: '15px' }}>
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <button 
+              onClick={() => setShowEmailModal(true)}
+              style={{
+                padding: '12px 24px',
+                background: '#163791',
+                border: '2px solid #001a62',
+                color: '#efefef',
+                fontWeight: 700,
+                cursor: 'pointer',
+                borderRadius: '0',
+                transition: 'all 0.3s',
+                clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                fontSize: '12px',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >{user?.email ? 'Change Email' : 'Add Email'}</button>
             <button 
               onClick={() => router.push('/h2h')}
               style={{
@@ -891,6 +922,17 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Change Email Modal */}
+      <EmailPromptModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onEmailUpdated={async () => {
+          await fetchUser();
+          setShowEmailModal(false);
+        }}
+        canClose={true}
+      />
     </div>
   );
 }

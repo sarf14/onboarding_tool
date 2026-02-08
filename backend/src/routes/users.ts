@@ -122,7 +122,28 @@ router.put('/:id', authenticate, async (req: AuthRequest, res) => {
     const updateData: any = {};
 
     if (name) updateData.name = name;
-    if (email && isAdmin) updateData.email = email;
+    if (email !== undefined && isAdmin) updateData.email = email || null;
+    if (email !== undefined && isSelf) {
+      // Users can update their own email
+      // Validate email format if provided
+      if (email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).json({ error: 'Invalid email format' });
+        }
+        // Check if email is already taken
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .neq('id', id)
+          .single();
+        if (existingUser) {
+          return res.status(400).json({ error: 'Email is already in use' });
+        }
+      }
+      updateData.email = email || null;
+    }
     if (roles && isAdmin) {
       const validRoles = ['TRAINEE', 'MENTOR', 'ADMIN'];
       const userRoles = Array.isArray(roles) ? roles : [roles];

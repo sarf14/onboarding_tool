@@ -531,5 +531,196 @@ For each task in the spreadsheet:
     ],
     documents: [],
     hasQuiz: true
+  },
+  section5: {
+    title: "Active Workflows - Form Project",
+    description: "Master the Form Project workflow for extracting form field information with critical flexibility points and best practices",
+    estimatedDuration: "4-5 hours",
+    topics: [
+      "Form Project Overview",
+      "Core Task Requirements",
+      "Critical Flexibility Points (No Penalty Zone)",
+      "Handling Predictable/Long Option Lists",
+      "Multi-Part Questions",
+      "Question Text Format",
+      "Quick Reference Rules",
+      "What to Flag vs What Not to Penalize"
+    ],
+    activities: [
+      {
+        name: "Read: Form Project Overview",
+        type: "read",
+        content: `Current Workflows - Yutori Project: Form Project
+
+The Form Project workflow focuses on extracting structured information from web forms. This is a critical workflow that requires understanding both the core task requirements and the flexibility points that allow for different valid approaches.
+
+Key Principles:
+• Read the prompt carefully before proceeding
+• Do not blindly follow previous guidelines - each task may have specific exceptions
+• Focus on accuracy while understanding acceptable variations
+• Know what to flag as errors vs. what are acceptable approaches
+
+Recent Updates:
+• Exception: Ignore country code options for phone numbers
+• Exception: For calendar pickers, extract only up to five options
+• Always read the prompt carefully and proceed accordingly`,
+        pageUrl: null,
+        pageNumber: null
+      },
+      {
+        name: "Read: Core Task Requirements",
+        type: "read",
+        content: `Core Task (Remain the same)
+
+Thoroughly go through the form. For every field a user must fill in or select, output a JSON-like object with:
+
+Required Structure:
+{
+  "question": "The label text you see",
+  "response_type": "single_choice | multiple_choice | text | upload | other",
+  "input_options": ["List", "of", "choices"] // or null/[] for non-choice questions
+}
+
+Key Requirements:
+• Extract information for every field that requires user input or selection
+• Identify the correct response type for each field
+• Include input options when applicable
+• Use null, [], or placeholder for non-choice questions or predictable long lists
+
+The core task remains consistent, but flexibility points allow for different valid approaches in certain areas.`,
+        pageUrl: null,
+        pageNumber: null
+      },
+      {
+        name: "Read: Critical Flexibility Points (No Penalty Zone)",
+        type: "read",
+        content: `CRITICAL FLEXIBILITY POINTS (No Penalty Zone)
+
+These are NOT mistakes - both approaches are fully acceptable:
+
+1. Handling Predictable/Long Option Lists
+   For fields like Country, State, Date of Birth, Calendar Pickers:
+   ✅ The model can list the actual options
+   ✅ OR set input_options to null, [], "None", or a placeholder like ["A", "B", "C"]
+   ✅ All approaches are equivalent - NO PENALTY
+
+2. Multi-Part Questions (Birthdate, Height, etc.)
+   If one question uses multiple boxes (e.g., Day/Month/Year dropdowns):
+   ✅ Create one entry: "question": "Date of Birth"
+   ✅ OR create separate entries: "question": "Birth Month", "question": "Birth Day"
+   ✅ Both approaches are acceptable
+
+3. Question Text Format
+   ✅ Use just the field label: "Month"
+   ✅ OR include parent context: "Date of Birth: Month"
+   ✅ Both approaches are acceptable
+
+4. Required Asterisks (*)
+   ✅ Can be included, omitted, or placed anywhere - NO PENALTY
+
+5. Calendar Pickers
+   ✅ Five options are sufficient
+   ✅ Extracting more is equally acceptable
+
+Remember: These are intentional flexibility areas. Do not penalize for these variations.`,
+        pageUrl: null,
+        pageNumber: null
+      },
+      {
+        name: "Read: Quick Reference Rules",
+        type: "read",
+        content: `Quick Reference Rules
+
+What to Skip:
+• "Choose one", "Select..." placeholder options - these are not questions
+• Next/Continue buttons
+• CAPTCHAs
+• FAQ accordions
+
+Special Handling:
+• Phone/Zip: Ignore country code dropdowns
+• Single checkbox: Use ["Checked", "Unchecked"] if no other options
+• Other (specify): Treat as one question, don't create separate entry for text box
+
+Focus Areas for Review:
+✅ Missing questions entirely
+✅ Wrong question meaning (major paraphrasing that changes meaning)
+✅ Missing options for clear choice-based questions (when it should have some list, not null)
+
+DO NOT Penalize For:
+❌ Using null vs. listing options for predictable fields
+❌ Combining or splitting multi-part questions
+❌ Minor variations in question text formatting
+
+The model has intentional flexibility in these areas.`,
+        pageUrl: null,
+        pageNumber: null
+      },
+      {
+        name: "Read: What to Flag vs What Not to Penalize",
+        type: "read",
+        content: `What to Flag (Significant Deviations):
+
+1. Missing Questions
+   - A field that requires user input is completely missing from the output
+   - This is a critical error that should be flagged
+
+2. Major Paraphrasing
+   - Question text that changes the meaning significantly
+   - Minor wording differences are acceptable
+   - Example: "Date of Birth" vs "Birthday" is acceptable, but "Age" vs "Date of Birth" changes meaning
+
+3. Missing Options for Choice Questions
+   - A clear choice-based question that should have input_options but has null or empty array
+   - Exception: Predictable/long lists (Country, State, etc.) can use null
+
+What NOT to Penalize:
+
+1. Flexibility in Option Lists
+   - null vs [] vs ["A", "B", "C"] for predictable fields
+   - All are equivalent and acceptable
+
+2. Multi-Part Question Handling
+   - One entry vs separate entries for Day/Month/Year
+   - Both approaches are valid
+
+3. Question Text Formatting
+   - "Month" vs "Date of Birth: Month"
+   - Including or omitting required asterisks (*)
+   - Minor variations are acceptable
+
+4. Calendar Picker Options
+   - Five options vs more options
+   - Both are acceptable
+
+Remember: Focus on accuracy and completeness, not on penalizing acceptable variations.`,
+        pageUrl: null,
+        pageNumber: null
+      },
+      {
+        name: "Practice: Form Field Extraction",
+        type: "practice",
+        content: `Practice identifying form fields and applying the flexibility rules.
+
+For each practice scenario:
+1. Identify all fields requiring user input
+2. Determine the response_type for each field
+3. Decide on input_options (considering flexibility points)
+4. Format question text appropriately
+5. Apply quick reference rules
+
+Key Practice Points:
+• Remember: Country/State/Date fields can use null for input_options
+• Multi-part questions can be combined or split
+• Question text can include or exclude parent context
+• Focus on what matters: missing questions, wrong meaning, missing choice lists (when not predictable)
+
+Practice with various form types to build confidence in applying these rules correctly.`,
+        pageUrl: null,
+        pageNumber: null
+      }
+    ],
+    documents: [],
+    hasQuiz: true
   }
 };

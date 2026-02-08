@@ -126,22 +126,75 @@ router.get('/search', authenticate, async (req: AuthRequest, res) => {
     }
 
     const { knowledgeBase } = await import('../services/knowledgeBase');
+    const kbInstance = (knowledgeBase as any).getInstance();
+    
+    // Wait for initialization
+    if (!kbInstance.isInitialized()) {
+      await kbInstance.waitForInitialization();
+    }
+    
+    const allChunks = knowledgeBase.getAllChunks();
     const results = knowledgeBase.search(query, 10);
 
     res.json({
       success: true,
       query,
+      knowledgeBaseStatus: {
+        initialized: kbInstance.isInitialized(),
+        totalChunks: allChunks.length,
+        chunkTypes: allChunks.reduce((acc: any, chunk) => {
+          acc[chunk.type] = (acc[chunk.type] || 0) + 1;
+          return acc;
+        }, {}),
+      },
       results: results.map((chunk: any) => ({
         id: chunk.id,
         source: chunk.source,
         content: chunk.content.substring(0, 500) + '...',
         type: chunk.type,
       })),
+      resultCount: results.length,
     });
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({
       error: 'Failed to search knowledge base',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// GET /api/chat/status - Check knowledge base status (for debugging)
+router.get('/status', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { knowledgeBase } = await import('../services/knowledgeBase');
+    const kbInstance = (knowledgeBase as any).getInstance();
+    
+    // Wait for initialization
+    if (!kbInstance.isInitialized()) {
+      await kbInstance.waitForInitialization();
+    }
+    
+    const allChunks = knowledgeBase.getAllChunks();
+    const chunkTypes = allChunks.reduce((acc: any, chunk) => {
+      acc[chunk.type] = (acc[chunk.type] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const sources = [...new Set(allChunks.map(chunk => chunk.source))];
+    
+    res.json({
+      success: true,
+      initialized: kbInstance.isInitialized(),
+      totalChunks: allChunks.length,
+      chunkTypes,
+      sources: sources.slice(0, 20), // First 20 sources
+      llmConfigured: !!(process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY),
+    });
+  } catch (error) {
+    console.error('Status check error:', error);
+    res.status(500).json({
+      error: 'Failed to check knowledge base status',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }

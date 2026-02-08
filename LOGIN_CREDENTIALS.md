@@ -5,28 +5,38 @@
 
 ---
 
+## 🔑 Login Method
+
+**ALL users (including Admin) login using their NAME and PASSWORD.**
+
+- **Name-based login:** All users must login with their name, not email
+- **Email collection:** After first login, users will be prompted to enter their email address
+- **@encord.ai users:** Users with @encord.ai emails are created with NULL email initially - they will enter their own personal email after first login
+
+---
+
 ## 👥 Test Users
 
 ### 🔴 Admin User
-- **Email:** `admin@onboarding.com`
-- **Password:** `admin123`
+- **Name:** `admin`
+- **Password:** `admin`
 - **Role:** ADMIN
 - **Can:** Create users, assign mentors/mentees, view all reports
 
 ### 🟡 Mentor User
-- **Email:** `mentor@onboarding.com`
+- **Name:** `Mentor User`
 - **Password:** `mentor123`
 - **Role:** MENTOR
 - **Can:** View mentee progress, track mentee activities
 
 ### 🟢 Trainee Users
 **Trainee 1:**
-- **Email:** `trainee@onboarding.com`
+- **Name:** `Trainee User`
 - **Password:** `trainee123`
 - **Role:** TRAINEE
 
 **Trainee 2:**
-- **Email:** `trainee2@onboarding.com`
+- **Name:** `Trainee User 2`
 - **Password:** `trainee123`
 - **Role:** TRAINEE
 
@@ -35,10 +45,11 @@
 ## 🚀 Quick Start
 
 1. **Open Frontend:** http://localhost:3000
-2. **Login as Admin:** Use `admin@onboarding.com` / `admin123`
+2. **Login as Admin:** Use `admin` / `admin`
 3. **Assign Mentor-Mentee:** Go to Admin Panel → Assign mentor to trainees
-4. **Login as Mentor:** Use `mentor@onboarding.com` / `mentor123` to view mentees
-5. **Login as Trainee:** Use `trainee@onboarding.com` / `trainee123` to access dashboard
+4. **Login as Mentor:** Use `Mentor User` / `mentor123` to view mentees
+5. **Login as Trainee:** Use `Trainee User` / `trainee123` to access dashboard
+6. **First Login:** After logging in, you'll be prompted to enter your email address
 
 ---
 

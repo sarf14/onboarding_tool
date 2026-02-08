@@ -19,17 +19,31 @@ export interface KnowledgeChunk {
 class KnowledgeBaseService {
   private chunks: KnowledgeChunk[] = [];
   private initialized: boolean = false;
+  private initializationPromise: Promise<void>;
 
   constructor() {
-    // Initialize asynchronously
-    this.buildKnowledgeBase().then(() => {
+    // Initialize asynchronously and store the promise
+    this.initializationPromise = this.buildKnowledgeBase().then(() => {
       this.initialized = true;
+      console.log(`[KnowledgeBase] Initialized with ${this.chunks.length} chunks`);
     }).catch((error) => {
-      console.error('Error initializing knowledge base:', error);
+      console.error('[KnowledgeBase] Error initializing knowledge base:', error);
       // Continue with empty chunks if initialization fails
       this.chunks = [];
       this.initialized = true;
     });
+  }
+  
+  async waitForInitialization(): Promise<void> {
+    await this.initializationPromise;
+  }
+  
+  isInitialized(): boolean {
+    return this.initialized;
+  }
+  
+  getChunkCount(): number {
+    return this.chunks.length;
   }
 
   private async buildKnowledgeBase() {
@@ -339,6 +353,17 @@ class KnowledgeBaseService {
 
   // Enhanced semantic search with better matching
   search(query: string, limit: number = 15): KnowledgeChunk[] {
+    // Check if knowledge base is initialized
+    if (!this.initialized) {
+      console.warn(`[KnowledgeBase] Not yet initialized, returning empty results for query: "${query}"`);
+      return [];
+    }
+    
+    if (this.chunks.length === 0) {
+      console.warn(`[KnowledgeBase] No chunks loaded, returning empty results for query: "${query}"`);
+      return [];
+    }
+    
     const queryLower = query.toLowerCase().trim();
     const queryWords = queryLower.split(/\s+/).filter((w) => w.length > 2);
     

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -18,12 +18,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log('Login form submitted with:', { email });
-      await login(email, password);
-      console.log('Login successful, redirecting to dashboard');
+      await login(name, password, true); // Always use name login
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Login error in form:', err);
       const errorMsg = typeof err === 'string' ? err : err?.message || err?.response?.data?.error || 'Login failed. Please check your credentials.';
       setError(errorMsg);
     } finally {
@@ -151,19 +148,19 @@ export default function LoginPage() {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <label htmlFor="email" style={{
+              <label htmlFor="name" style={{
                 color: '#efefef',
                 fontSize: '14px',
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '2px',
                 fontFamily: "'Orbitron', sans-serif"
-              }}>Email Address</label>
+              }}>Name</label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 required
                 style={{
                   width: '100%',
@@ -186,7 +183,8 @@ export default function LoginPage() {
                   e.currentTarget.style.borderColor = '#163791';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
-                placeholder="Enter your email"
+                placeholder="Enter your name"
+                autoFocus
               />
             </div>
 

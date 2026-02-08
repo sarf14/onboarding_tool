@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
+import EmailPromptModal from '../components/EmailPromptModal';
 
 interface User {
   id: string;
@@ -26,7 +27,7 @@ interface User {
 
 export default function AdminPanel() {
   const router = useRouter();
-  const { user, token, logout } = useAuthStore();
+  const { user, token, logout, fetchUser } = useAuthStore();
   const [users, setUsers] = useState<User[]>([]);
   const [mentors, setMentors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +40,7 @@ export default function AdminPanel() {
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '', roles: ['TRAINEE'] });
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -131,8 +133,8 @@ export default function AdminPanel() {
 
   const createUser = async () => {
     try {
-      if (!newUser.email || !newUser.password || !newUser.name) {
-        alert('Please fill in all required fields');
+      if (!newUser.password || !newUser.name) {
+        alert('Please fill in name and password');
         return;
       }
 
@@ -330,7 +332,7 @@ export default function AdminPanel() {
             borderBottom: '20px solid #001a62'
           }}></div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: '0 0 auto', minWidth: 0 }}>
             {/* AUTONEX Logo */}
             <img 
               src="https://autonex-onboard.vercel.app/logo.png" 
@@ -339,7 +341,8 @@ export default function AdminPanel() {
                 height: '50px',
                 width: 'auto',
                 filter: 'brightness(0) invert(1)',
-                display: 'block'
+                display: 'block',
+                flexShrink: 0
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -359,10 +362,12 @@ export default function AdminPanel() {
               fontFamily: "'Orbitron', sans-serif",
               color: '#efefef',
               textTransform: 'uppercase',
-              letterSpacing: '4px'
+              letterSpacing: '4px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0
             }}>Admin Panel</h1>
           </div>
-          <div style={{ display: 'flex', gap: '15px' }}>
+          <div style={{ display: 'flex', gap: '15px', flexShrink: 0, marginLeft: '20px' }}>
             <button
               onClick={() => router.push('/dashboard')}
               style={{
@@ -649,7 +654,7 @@ export default function AdminPanel() {
                 {users.map((u) => (
                   <tr key={u.id} style={{ borderBottom: '1px solid #163791' }}>
                     <td style={{ padding: '15px', color: '#efefef' }}>{u.name}</td>
-                    <td style={{ padding: '15px', color: '#efefef' }}>{u.email}</td>
+                    <td style={{ padding: '15px', color: '#efefef' }}>{u.email || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>No email</span>}</td>
                     <td style={{ padding: '15px' }}>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         {u.roles.map((role) => (
@@ -875,7 +880,7 @@ export default function AdminPanel() {
                 
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontFamily: "'Orbitron', sans-serif", color: '#efefef', letterSpacing: '1px' }}>
-                    Email *
+                    Email (Optional)
                   </label>
                   <input
                     type="email"
@@ -892,7 +897,7 @@ export default function AdminPanel() {
                       color: '#efefef',
                       fontFamily: "'Inter', sans-serif"
                     }}
-                    placeholder="user@example.com"
+                    placeholder="user@example.com (optional)"
                   />
                 </div>
                 
@@ -1201,6 +1206,17 @@ export default function AdminPanel() {
           </div>
         )}
       </div>
+
+      {/* Change Email Modal */}
+      <EmailPromptModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onEmailUpdated={async () => {
+          await fetchUser();
+          setShowEmailModal(false);
+        }}
+        canClose={true}
+      />
     </div>
   );
 }

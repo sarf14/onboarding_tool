@@ -2,6 +2,8 @@ import express from 'express';
 import { supabase } from '../config/database';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { getISTDate } from '../utils/date';
+import { sendMentorAssignmentEmails } from '../services/emailService';
+import { config } from '../config/env';
 
 const router = express.Router();
 
@@ -339,6 +341,39 @@ router.post('/assign-mentor', async (req: AuthRequest, res) => {
         mentorId,
         programStartDate: updateData.programStartDate || trainee?.programStartDate,
       });
+
+      // Send email notifications (non-blocking)
+      // Get trainee password from request if available, otherwise use placeholder
+      const traineePassword = req.body.traineePasswords?.[traineeId] || '[Use your existing password]';
+      
+      // Always attempt to send emails if either party has an email
+      if (mentor.email || trainee.email) {
+        console.log(`📧 Attempting to send assignment emails for mentor-mentee pair:`);
+        console.log(`   Mentor: ${mentor.name} (${mentor.email || 'no email'})`);
+        console.log(`   Mentee: ${trainee.name} (${trainee.email || 'no email'})`);
+        
+        sendMentorAssignmentEmails({
+          mentorName: mentor.name,
+          mentorEmail: mentor.email || '',
+          menteeName: trainee.name,
+          menteeEmail: trainee.email || '',
+          portalUrl: config.frontendUrl,
+          loginCredentials: {
+            email: trainee.email || undefined,
+            name: trainee.name,
+            password: traineePassword,
+          },
+        }).then(() => {
+          console.log(`✅ Email notification process completed for ${trainee.name}`);
+        }).catch((emailError) => {
+          console.error('❌ Email notification failed (non-critical):', emailError);
+          // Don't fail the assignment if email fails
+        });
+      } else {
+        console.warn(`⚠️  Skipping email notification - neither mentor nor mentee has an email address`);
+        console.warn(`   Mentor: ${mentor.name} (no email)`);
+        console.warn(`   Mentee: ${trainee.name} (no email)`);
+      }
     }
 
     res.json({
@@ -433,25 +468,27 @@ router.post('/users', async (req, res) => {
   try {
     const { email, password, name, roles } = req.body;
 
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: 'Email, password, and name are required' });
+    if (!password || !name) {
+      return res.status(400).json({ error: 'Password and name are required' });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
 
-    // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single();
+      // Check if user already exists with this email
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .single();
 
-    if (existingUser) {
-      return res.status(400).json({ error: 'User with this email already exists' });
+      if (existingUser) {
+        return res.status(400).json({ error: 'User with this email already exists' });
+      }
     }
 
     // Validate roles
@@ -471,7 +508,7 @@ router.post('/users', async (req, res) => {
     const { data: user, error } = await supabase
       .from('users')
       .insert({
-        email,
+        email: email || null,
         password: hashedPassword,
         name,
         roles: userRoles,

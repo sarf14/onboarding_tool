@@ -3,7 +3,7 @@ import api from '@/lib/api';
 
 interface User {
   id: string;
-  email: string;
+  email: string | null;
   name: string;
   roles: string[];
   mentorId?: string;
@@ -15,7 +15,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (emailOrName: string, password: string, useName?: boolean) => Promise<void>;
   logout: () => void;
   fetchUser: () => Promise<void>;
 }
@@ -25,12 +25,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
   isLoading: false,
 
-  login: async (email: string, password: string) => {
+  login: async (name: string, password: string, useName: boolean = true) => {
     set({ isLoading: true });
     try {
-      console.log('Attempting login with:', { email, apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api' });
-      const response = await api.post('/auth/login', { email, password });
-      console.log('Login response:', response.data);
+      // Always use name-based login
+      const payload = { name, password };
+      
+      const response = await api.post('/auth/login', payload);
       const { token, user } = response.data;
       
       if (!token || !user) {
@@ -46,12 +47,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ token, user, isLoading: false });
     } catch (error: any) {
       set({ isLoading: false });
-      console.error('Login error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        code: error.code
-      });
       const errorMessage = error.response?.data?.error || error.message || 'Login failed. Please check your credentials.';
       throw errorMessage;
     }

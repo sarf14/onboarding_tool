@@ -13,6 +13,7 @@ export default function SectionContentPage() {
   const [content, setContent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [quizStatus, setQuizStatus] = useState<{ passed: boolean; score: number } | null>(null);
+  const [sectionWarning, setSectionWarning] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -27,8 +28,9 @@ export default function SectionContentPage() {
     try {
       const response = await api.get(`/content/section/${section}`);
       setContent(response.data.content);
+      setSectionWarning(response.data.warning || null);
     } catch (error) {
-      console.error('Failed to fetch content:', error);
+      setSectionWarning(null);
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +51,7 @@ export default function SectionContentPage() {
           return current.percentage > (best?.percentage || 0) ? current : best;
         }, quizzes[0]);
         
-        if (bestQuiz.percentage >= 80) {
+        if (bestQuiz.percentage >= 90) {
           setQuizStatus({ passed: true, score: bestQuiz.percentage });
         } else {
           setQuizStatus({ passed: false, score: bestQuiz.percentage });
@@ -58,7 +60,6 @@ export default function SectionContentPage() {
         setQuizStatus(null);
       }
     } catch (error) {
-      console.error('Failed to fetch quiz status:', error);
       setQuizStatus(null);
     }
   };
@@ -387,6 +388,31 @@ export default function SectionContentPage() {
             ← Dashboard
           </button>
         </div>
+
+        {/* Section prerequisite warning */}
+        {sectionWarning && (
+          <div style={{
+            marginBottom: '30px',
+            padding: '20px 25px',
+            background: '#1e3a5f',
+            border: '2px solid #f59e0b',
+            borderLeft: '8px solid #f59e0b',
+            color: '#efefef',
+            borderRadius: '0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '15px',
+            clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
+          }}>
+            <span style={{ fontSize: '28px' }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '5px', fontFamily: "'Orbitron', sans-serif", letterSpacing: '1px' }}>
+                Please complete previous sections first
+              </div>
+              <div style={{ fontSize: '15px', opacity: 0.95 }}>{sectionWarning}</div>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>

@@ -45,6 +45,7 @@ import taskRoutes from './routes/tasks';
 import contentRoutes from './routes/content';
 import chatRoutes from './routes/chat';
 import h2hRoutes from './routes/h2h';
+import { knowledgeBase } from './services/knowledgeBase';
 import { chatCleanupService } from './services/chatCleanup';
 import { quizCleanupService } from './services/quizCleanup';
 
@@ -98,6 +99,19 @@ const server = app.listen(config.port, '0.0.0.0', () => {
   // Start cleanup services
   chatCleanupService.start();
   quizCleanupService.start();
+
+  // Pre-warm knowledge base so first chat response is fast
+  try {
+    const kbInstance = (knowledgeBase as any).getInstance();
+    kbInstance.waitForInitialization().then(() => {
+      const chunkCount = kbInstance.getChunkCount ? kbInstance.getChunkCount() : 'unknown';
+      console.log(`📚 Knowledge base initialized at startup with ${chunkCount} chunks`);
+    }).catch((error: any) => {
+      console.error('Knowledge base initialization failed at startup:', error);
+    });
+  } catch (error) {
+    console.error('Failed to start knowledge base initialization:', error);
+  }
 });
 
 // Graceful shutdown

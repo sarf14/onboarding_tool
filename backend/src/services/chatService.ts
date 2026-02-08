@@ -151,11 +151,34 @@ class ChatService {
   }
 
   async chat(userMessage: string, conversationHistory: ChatMessage[] = []): Promise<ChatResponse> {
+    // Ensure knowledge base is initialized before searching
+    const kbInstance = (knowledgeBase as any).getInstance();
+    if (!kbInstance.isInitialized()) {
+      console.log('[ChatService] Waiting for knowledge base initialization...');
+      await kbInstance.waitForInitialization();
+    }
+    
     const isRealTime = this.detectRealTimeScenario(userMessage);
     const searchLimit = isRealTime ? 12 : 10;
+    
+    // Check knowledge base status
+    const allChunks = knowledgeBase.getAllChunks();
+    console.log(`[ChatService] Knowledge base has ${allChunks.length} chunks loaded`);
+    
+    if (allChunks.length === 0) {
+      console.error('[ChatService] Knowledge base is empty! No training materials loaded.');
+      return {
+        message: "I apologize, but the knowledge base hasn't been loaded yet. Please contact support if this issue persists.",
+        sources: [],
+        contextUsed: [],
+      };
+    }
+    
     const relevantChunks = knowledgeBase.search(userMessage, searchLimit);
+    console.log(`[ChatService] Found ${relevantChunks.length} relevant chunks for query: "${userMessage}"`);
     
     if (relevantChunks.length === 0) {
+      console.warn(`[ChatService] No relevant chunks found for: "${userMessage}"`);
       return {
         message: "I couldn't find specific information about that topic in the training materials. Could you rephrase your question or ask about a specific topic like error categorization, task status, annotation processes, or H2H review?",
         sources: [],
@@ -374,7 +397,27 @@ Respond in the SAME LANGUAGE the user used.`}`;
   // This should match LLM behavior as closely as possible
   getFallbackResponse(query: string): ChatResponse {
     try {
+      // Ensure knowledge base is initialized
+      const kbInstance = (knowledgeBase as any).getInstance();
+      if (!kbInstance.isInitialized()) {
+        return {
+          message: "I apologize, but the knowledge base is still loading. Please try again in a moment.",
+          sources: [],
+          contextUsed: [],
+        };
+      }
+      
+      const allChunks = knowledgeBase.getAllChunks();
+      if (allChunks.length === 0) {
+        return {
+          message: "I apologize, but no training materials have been loaded. Please contact support.",
+          sources: [],
+          contextUsed: [],
+        };
+      }
+      
       const relevantChunks = knowledgeBase.search(query, 5);
+      console.log(`[ChatService] Fallback search found ${relevantChunks.length} chunks for: "${query}"`);
       
       if (relevantChunks.length === 0) {
         return {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Orbitron } from "next/font/google";
 import "./globals.css";
 import FloatingChatIcon from "./components/FloatingChatIcon";
+import EmailPromptWrapper from "./components/EmailPromptWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 const orbitron = Orbitron({ 
@@ -21,9 +22,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
-      <body className={`${inter.className} ${orbitron.variable} h-full`}>
-        {children}
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <body className={`${inter.className} ${orbitron.variable} h-full`} suppressHydrationWarning>
+        <EmailPromptWrapper>
+          {children}
+        </EmailPromptWrapper>
         <FloatingChatIcon />
       </body>
     </html>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
+import EmailPromptModal from '../components/EmailPromptModal';
 
 interface Mentee {
   id: string;
@@ -28,12 +29,13 @@ interface ChatMessage {
 
 export default function MentorDashboard() {
   const router = useRouter();
-  const { user, token, logout } = useAuthStore();
+  const { user, token, logout, fetchUser } = useAuthStore();
   const [mentees, setMentees] = useState<Mentee[]>([]);
   const [selectedMentee, setSelectedMentee] = useState<Mentee | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -742,6 +744,17 @@ export default function MentorDashboard() {
           )}
         </div>
       </div>
+
+      {/* Change Email Modal */}
+      <EmailPromptModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onEmailUpdated={async () => {
+          await fetchUser();
+          setShowEmailModal(false);
+        }}
+        canClose={true}
+      />
     </div>
   );
 }

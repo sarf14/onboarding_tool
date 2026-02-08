@@ -28,6 +28,7 @@ export default function QuizPage() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // Time in seconds
   const [timeUp, setTimeUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quizWarning, setQuizWarning] = useState<string | null>(null);
   // Store shuffled questions with mapping: questionId -> { shuffledOptions, originalToShuffled, shuffledToOriginal }
   const [shuffledQuestions, setShuffledQuestions] = useState<{
     [key: number]: {
@@ -134,12 +135,10 @@ export default function QuizPage() {
 
   const fetchQuiz = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      console.log('Fetching quiz from:', `${apiUrl}/content/quiz/${section}`);
-      
       const response = await api.get(`/content/quiz/${section}`);
       const data = response.data;
       setQuizData(data);
+      setQuizWarning(data.warning || null);
       
       // Shuffle options for each question
       const shuffled: typeof shuffledQuestions = {};
@@ -168,19 +167,7 @@ export default function QuizPage() {
       setShuffledQuestions(shuffled);
       setError(null); // Clear any previous errors
     } catch (error: any) {
-      console.error('Failed to fetch quiz:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        config: {
-          url: error.config?.url,
-          baseURL: error.config?.baseURL,
-          method: error.config?.method,
-        },
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-      
+      setQuizWarning(null);
       // Set user-friendly error message
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -647,6 +634,31 @@ export default function QuizPage() {
             </button>
           </div>
         </div>
+
+        {/* Quiz prerequisite warning */}
+        {quizWarning && (
+          <div style={{
+            marginBottom: '30px',
+            padding: '20px 25px',
+            background: '#1e3a5f',
+            border: '2px solid #f59e0b',
+            borderLeft: '8px solid #f59e0b',
+            color: '#efefef',
+            borderRadius: '0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '15px',
+            clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
+          }}>
+            <span style={{ fontSize: '28px' }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '5px', fontFamily: "'Orbitron', sans-serif", letterSpacing: '1px' }}>
+                Please complete previous sections first
+              </div>
+              <div style={{ fontSize: '15px', opacity: 0.95 }}>{quizWarning}</div>
+            </div>
+          </div>
+        )}
 
         {/* Quiz Content */}
         <div style={{

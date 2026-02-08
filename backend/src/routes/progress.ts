@@ -10,22 +10,31 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
 
-    const { data: progress, error } = await supabase
-      .from('progress')
-      .select('*')
-      .eq('userId', userId)
-      .order('day', { ascending: true });
+    // Get progress, quizzes, and user info in parallel for faster response
+    const [progressResult, quizzesResult, userResult] = await Promise.all([
+      supabase
+        .from('progress')
+        .select('*')
+        .eq('userId', userId)
+        .order('day', { ascending: true }),
+      supabase
+        .from('quizzes')
+        .select('day, percentage, "quizType", "completedAt"')
+        .eq('userId', userId)
+        .in('quizType', ['DAY_END_QUIZ'])
+        .order('completedAt', { ascending: false }),
+      supabase
+        .from('users')
+        .select('"currentDay", "programStartDate"')
+        .eq('id', userId)
+        .single()
+    ]);
 
-    if (error) throw error;
+    if (progressResult.error) throw progressResult.error;
 
-    // Get quiz scores for sections (days 1-4)
-    // Note: Database uses DAY_END_QUIZ instead of SECTION_QUIZ
-    const { data: quizzes } = await supabase
-      .from('quizzes')
-      .select('day, percentage, "quizType", "completedAt"')
-      .eq('userId', userId)
-      .in('quizType', ['DAY_END_QUIZ'])
-      .order('completedAt', { ascending: false });
+    const progress = progressResult.data || [];
+    const quizzes = quizzesResult.data || [];
+    const user = userResult.data;
 
     // Map quiz scores to progress entries
     // Also create progress entries for sections with completed quizzes but no progress entry
@@ -34,8 +43,8 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       progressMap.set(p.day, p);
     });
     
-    // Find quizzes for sections 1-4 and ensure progress entries exist
-    const sectionQuizzes = (quizzes || []).filter((q: any) => q.day && q.day <= 4);
+    // Find quizzes for sections 1-5 and ensure progress entries exist
+    const sectionQuizzes = (quizzes || []).filter((q: any) => q.day && q.day <= 5);
     
     // Create progress entries for sections with quizzes but no progress entry
     for (const quiz of sectionQuizzes) {
@@ -56,9 +65,9 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
     
     const progressWithQuizzes = Array.from(progressMap.values()).map((p: any) => {
       const section = p.day; // Progress uses day column
-      // Find the best quiz score for this section (day 1-4)
+      // Find the best quiz score for this section (day 1-5)
       const sectionQuiz = quizzes?.find((q: any) => {
-        return q.day === section && section <= 4;
+        return q.day === section && section <= 5;
       });
       
       const passingScore = 90;
@@ -83,19 +92,12 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       };
     });
 
-    // Calculate overall progress - only count days 1-4 as sections
+    // Calculate overall progress - count days 1-5 as sections
     const completedSections = progressWithQuizzes.filter((p: any) => {
-      return p.status === 'COMPLETED' && (p.section || p.day) <= 4;
+      return p.status === 'COMPLETED' && (p.section || p.day) <= 5;
     }).length;
-    const totalSections = 4;
+    const totalSections = 5;
     const overallProgress = Math.round((completedSections / totalSections) * 100);
-
-    // Get user info
-    const { data: user } = await supabase
-      .from('users')
-      .select('"currentDay", "programStartDate"')
-      .eq('id', userId)
-      .single();
 
     res.json({
       progress: progressWithQuizzes,
@@ -165,8 +167,8 @@ router.get('/:userId', authenticate, async (req: AuthRequest, res) => {
       progressMap.set(p.day, p);
     });
     
-    // Find quizzes for sections 1-4 and ensure progress entries exist
-    const sectionQuizzes = (quizzes || []).filter((q: any) => q.day && q.day <= 4);
+    // Find quizzes for sections 1-5 and ensure progress entries exist
+    const sectionQuizzes = (quizzes || []).filter((q: any) => q.day && q.day <= 5);
     
     // Create progress entries for sections with quizzes but no progress entry
     for (const quiz of sectionQuizzes) {
@@ -187,9 +189,9 @@ router.get('/:userId', authenticate, async (req: AuthRequest, res) => {
     
     const progressWithQuizzes = Array.from(progressMap.values()).map((p: any) => {
       const section = p.day; // Progress uses day column
-      // Find the best quiz score for this section (day 1-4)
+      // Find the best quiz score for this section (day 1-5)
       const sectionQuiz = quizzes?.find((q: any) => {
-        return q.day === section && section <= 4;
+        return q.day === section && section <= 5;
       });
       
       const passingScore = 90;
@@ -215,9 +217,9 @@ router.get('/:userId', authenticate, async (req: AuthRequest, res) => {
     });
 
     const completedSections = progressWithQuizzes.filter((p: any) => {
-      return p.status === 'COMPLETED' && (p.section || p.day) <= 4;
+      return p.status === 'COMPLETED' && (p.section || p.day) <= 5;
     }).length;
-    const totalSections = 4;
+    const totalSections = 5;
     const overallProgress = Math.round((completedSections / totalSections) * 100);
 
     const { data: user } = await supabase

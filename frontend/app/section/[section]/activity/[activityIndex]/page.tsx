@@ -27,7 +27,7 @@ export default function ActivityPage() {
       const response = await api.get(`/content/activity/${section}/${activityIndex}`);
       setActivityData(response.data);
     } catch (error) {
-      console.error('Failed to fetch activity:', error);
+      setActivityData(null);
     } finally {
       setIsLoading(false);
     }
@@ -356,6 +356,31 @@ export default function ActivityPage() {
           </button>
         </div>
 
+        {/* Activity prerequisite warning */}
+        {activityData.warning && (
+          <div style={{
+            marginBottom: '30px',
+            padding: '20px 25px',
+            background: '#1e3a5f',
+            border: '2px solid #f59e0b',
+            borderLeft: '8px solid #f59e0b',
+            color: '#efefef',
+            borderRadius: '0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '15px',
+            clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
+          }}>
+            <span style={{ fontSize: '28px' }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '5px', fontFamily: "'Orbitron', sans-serif", letterSpacing: '1px' }}>
+                Please complete previous sections first
+              </div>
+              <div style={{ fontSize: '15px', opacity: 0.95 }}>{activityData.warning}</div>
+            </div>
+          </div>
+        )}
+
         {/* Activity Content */}
         <div style={{
           background: '#141943',
@@ -611,45 +636,44 @@ export default function ActivityPage() {
 
             <button
               onClick={() => {
-                if (activityIndex < (activityData.allActivities?.length || 0) - 1) {
-                  router.push(`/section/${section}/activity/${activityIndex + 1}`);
+                const isLastActivity = activityIndex >= (activityData.allActivities?.length || 0) - 1;
+                if (isLastActivity) {
+                  // Navigate to quiz page for this section
+                  router.push(`/section/${section}/quiz`);
                 } else {
-                  router.push(`/section/${section}`);
+                  router.push(`/section/${section}/activity/${activityIndex + 1}`);
                 }
               }}
               style={{
                 padding: '18px 45px',
-                background: activityIndex < (activityData.allActivities?.length || 0) - 1 ? '#163791' : '#141943',
-                border: `2px solid ${activityIndex < (activityData.allActivities?.length || 0) - 1 ? '#001a62' : '#163791'}`,
+                background: '#163791',
+                border: '2px solid #001a62',
                 color: '#efefef',
                 borderRadius: '0',
                 fontWeight: 900,
                 fontSize: '18px',
                 textTransform: 'uppercase',
-                cursor: activityIndex < (activityData.allActivities?.length || 0) - 1 ? 'pointer' : 'not-allowed',
+                cursor: 'pointer',
                 transition: 'all 0.3s',
                 letterSpacing: '2px',
-                opacity: activityIndex < (activityData.allActivities?.length || 0) - 1 ? 1 : 0.5,
-                boxShadow: activityIndex < (activityData.allActivities?.length || 0) - 1 ? '0 10px 30px rgba(22, 55, 145, 0.5)' : 'none',
+                boxShadow: '0 10px 30px rgba(22, 55, 145, 0.5)',
                 fontFamily: "'Orbitron', sans-serif",
                 clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
               }}
               onMouseEnter={(e) => {
-                if (activityIndex < (activityData.allActivities?.length || 0) - 1) {
-                  e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(22, 55, 145, 0.7)';
-                  e.currentTarget.style.background = '#001a62';
-                  e.currentTarget.style.borderColor = '#163791';
-                }
+                e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 15px 40px rgba(22, 55, 145, 0.7)';
+                e.currentTarget.style.background = '#001a62';
+                e.currentTarget.style.borderColor = '#163791';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = activityIndex < (activityData.allActivities?.length || 0) - 1 ? '0 10px 30px rgba(22, 55, 145, 0.5)' : 'none';
-                e.currentTarget.style.background = activityIndex < (activityData.allActivities?.length || 0) - 1 ? '#163791' : '#141943';
-                e.currentTarget.style.borderColor = activityIndex < (activityData.allActivities?.length || 0) - 1 ? '#001a62' : '#163791';
+                e.currentTarget.style.boxShadow = '0 10px 30px rgba(22, 55, 145, 0.5)';
+                e.currentTarget.style.background = '#163791';
+                e.currentTarget.style.borderColor = '#001a62';
               }}
             >
-              Next Activity →
+              {activityIndex >= (activityData.allActivities?.length || 0) - 1 ? 'Attempt Quiz →' : 'Next Activity →'}
             </button>
           </div>
         </div>

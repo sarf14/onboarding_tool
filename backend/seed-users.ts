@@ -18,25 +18,25 @@ async function createUsers() {
 
   const users = [
     {
-      email: 'admin@onboarding.com',
-      password: 'admin123',
-      name: 'Admin User',
+      email: null, // Admin will enter email after first login
+      password: 'admin',
+      name: 'admin',
       roles: ['ADMIN'],
     },
     {
-      email: 'mentor@onboarding.com',
+      email: null, // Mentor will enter email after first login
       password: 'mentor123',
       name: 'Mentor User',
       roles: ['MENTOR'],
     },
     {
-      email: 'trainee@onboarding.com',
+      email: null, // Trainee will enter email after first login
       password: 'trainee123',
       name: 'Trainee User',
       roles: ['TRAINEE'],
     },
     {
-      email: 'trainee2@onboarding.com',
+      email: null, // Trainee will enter email after first login
       password: 'trainee123',
       name: 'Trainee User 2',
       roles: ['TRAINEE'],
@@ -45,15 +45,15 @@ async function createUsers() {
 
   for (const userData of users) {
     try {
-      // Check if user exists
+      // Check if user exists by name (since email may be null)
       const { data: existing } = await supabase
         .from('users')
         .select('id')
-        .eq('email', userData.email)
+        .eq('name', userData.name)
         .single();
 
       if (existing) {
-        console.log(`⏭️  User ${userData.email} already exists, skipping...`);
+        console.log(`⏭️  User "${userData.name}" already exists, skipping...`);
         continue;
       }
 
@@ -73,29 +73,32 @@ async function createUsers() {
         .single();
 
       if (error) {
-        console.error(`❌ Error creating ${userData.email}:`, error.message);
+        console.error(`❌ Error creating ${userData.name}:`, error.message);
       } else {
-        console.log(`✅ Created ${userData.email} (${userData.roles.join(', ')})`);
+        console.log(`✅ Created ${userData.name} (${userData.roles.join(', ')})`);
       }
     } catch (error: any) {
-      console.error(`❌ Error creating ${userData.email}:`, error.message);
+      console.error(`❌ Error creating ${userData.name}:`, error.message);
     }
   }
 
   console.log('\n✨ Seed complete!');
-  console.log('\n📋 Test Users:');
+  console.log('\n📋 Login Credentials (ALL USERS LOGIN WITH NAME):');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('Admin:');
-  console.log('  Email: admin@onboarding.com');
-  console.log('  Password: admin123');
+  console.log('  Name: admin');
+  console.log('  Password: admin');
+  console.log('  Note: After first login, admin will be prompted to enter email');
   console.log('\nMentor:');
-  console.log('  Email: mentor@onboarding.com');
+  console.log('  Name: Mentor User');
   console.log('  Password: mentor123');
+  console.log('  Note: After first login, mentor will be prompted to enter email');
   console.log('\nTrainees:');
-  console.log('  Email: trainee@onboarding.com');
+  console.log('  Name: Trainee User');
   console.log('  Password: trainee123');
-  console.log('  Email: trainee2@onboarding.com');
+  console.log('  Name: Trainee User 2');
   console.log('  Password: trainee123');
+  console.log('  Note: After first login, each trainee will be prompted to enter email');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
 

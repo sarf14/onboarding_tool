@@ -958,6 +958,131 @@ export const quizzes = {
         explanation: "Time Misunderstanding - Errors related to date/time calculations or understanding the current date/time should be classified as Time Misunderstanding, especially when they occur in the final step affecting the output."
       }
     ]
+  },
+  section5: {
+    title: "Active Workflows - Form Project Quiz",
+    questions: [
+      {
+        id: 1,
+        question: "What is the core task for the Form Project workflow?",
+        options: [
+          "Thoroughly go through the form and output a JSON-like object for every field requiring user input, with question, response_type, and input_options",
+          "Extract only text fields from forms",
+          "Count the number of fields in a form",
+          "Identify which fields are required vs optional"
+        ],
+        correctAnswer: 0,
+        explanation: "The core task is to thoroughly go through the form and output a JSON-like object for every field a user must fill in or select, including question, response_type, and input_options."
+      },
+      {
+        id: 2,
+        question: "For a Country dropdown field with 200+ options, which approach is acceptable?",
+        options: [
+          "All of the following: input_options: null, input_options: [], or input_options: [\"A\", \"B\", \"C\"]",
+          "Only listing all 200+ actual country names",
+          "Only using null",
+          "Only using an empty array"
+        ],
+        correctAnswer: 0,
+        explanation: "For predictable/long option lists like Country, State, Date of Birth, or Calendar Pickers, the model can EITHER list actual options OR set input_options to null, [], \"None\", or a placeholder. All approaches are equivalent - NO PENALTY."
+      },
+      {
+        id: 3,
+        question: "How should you handle a Date of Birth field with separate Day, Month, and Year dropdowns?",
+        options: [
+          "Either create one entry (\"Date of Birth\") OR create separate entries (\"Birth Month\", \"Birth Day\", \"Birth Year\") - both are acceptable",
+          "Always create separate entries for each dropdown",
+          "Always combine into one entry",
+          "Skip multi-part questions entirely"
+        ],
+        correctAnswer: 0,
+        explanation: "For multi-part questions like birthdate with Day/Month/Year dropdowns, the model can EITHER create one entry (\"question\": \"Date of Birth\") OR create separate entries. Both approaches are acceptable."
+      },
+      {
+        id: 4,
+        question: "What should you do with country code dropdowns for phone number fields?",
+        options: [
+          "Ignore them - do not extract country code options for phone numbers",
+          "Always extract them as separate questions",
+          "Include them in the phone number question's input_options",
+          "Extract them only if there are fewer than 10 options"
+        ],
+        correctAnswer: 0,
+        explanation: "Exception rule: Ignore country code options for phone numbers. This is a specific exception mentioned in the recent instructions."
+      },
+      {
+        id: 5,
+        question: "For calendar pickers, how many options should you extract?",
+        options: [
+          "Five options are sufficient, though extracting more is equally acceptable",
+          "Exactly five options - no more, no less",
+          "All available options must be extracted",
+          "Only one option is needed"
+        ],
+        correctAnswer: 0,
+        explanation: "Exception rule: For calendar pickers, extract only up to five options. However, extracting more is equally acceptable - five is sufficient but not a strict limit."
+      },
+      {
+        id: 6,
+        question: "Which of the following should you SKIP when extracting form fields?",
+        options: [
+          "Placeholder options like \"Choose one\" or \"Select...\", Next/Continue buttons, CAPTCHAs, and FAQ accordions",
+          "All dropdown fields",
+          "Text input fields",
+          "Checkbox fields"
+        ],
+        correctAnswer: 0,
+        explanation: "Quick reference rules: Skip placeholder options (\"Choose one\", \"Select...\"), Next/Continue buttons, CAPTCHAs, and FAQ accordions. These are not actual questions requiring user input."
+      },
+      {
+        id: 7,
+        question: "For a single checkbox field with no other options, what should input_options be?",
+        options: [
+          "[\"Checked\", \"Unchecked\"]",
+          "null",
+          "[]",
+          "Skip the field entirely"
+        ],
+        correctAnswer: 0,
+        explanation: "Quick reference rule: For a single checkbox, use [\"Checked\", \"Unchecked\"] if no other options are available."
+      },
+      {
+        id: 8,
+        question: "What should you FLAG as a significant deviation?",
+        options: [
+          "Missing a question entirely, major paraphrasing that changes meaning, or missing options for a clear choice-based question (when it should have some list, not null)",
+          "Using null vs listing options for predictable fields like Country or State",
+          "Combining or splitting multi-part questions",
+          "Minor variations in question text formatting"
+        ],
+        correctAnswer: 0,
+        explanation: "Flag issues for: missing questions entirely, major paraphrasing that changes the question's meaning, or missing options for a clear choice-based question. DO NOT penalize for flexibility points like using null for predictable fields, combining/splitting multi-part questions, or minor text variations."
+      },
+      {
+        id: 9,
+        question: "For an \"Other (specify)\" field with a text box, how should you handle it?",
+        options: [
+          "Treat as one question - don't create a separate entry for the text box",
+          "Create two separate entries: one for \"Other\" and one for the text box",
+          "Skip the \"Other\" option and only extract the text box",
+          "Only extract if the text box is filled"
+        ],
+        correctAnswer: 0,
+        explanation: "Quick reference rule: For \"Other (specify)\" fields, treat as one question. Don't create a separate entry for the text box - it's part of the same question."
+      },
+      {
+        id: 10,
+        question: "What is the most important principle when working with Form Project workflows?",
+        options: [
+          "Read the prompt carefully and proceed accordingly - do not blindly follow previous guidelines",
+          "Always use the same approach for every form",
+          "Extract as many options as possible for every field",
+          "Skip fields that seem complicated"
+        ],
+        correctAnswer: 0,
+        explanation: "The most important principle is: \"Please do not blindly follow previous guidelines. Read the prompt carefully and then proceed with the task accordingly.\" Each task may have specific exceptions or updates that override general guidelines."
+      }
+    ]
   }
 };
 

@@ -2,15 +2,6 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-// Log API configuration on client side (for debugging)
-if (typeof window !== 'undefined') {
-  console.log('🔧 API Configuration:', {
-    apiUrl: API_URL,
-    envVarSet: !!process.env.NEXT_PUBLIC_API_URL,
-    isLocalhost: API_URL.includes('localhost') || API_URL.includes('127.0.0.1'),
-  });
-}
-
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -39,6 +30,10 @@ api.interceptors.request.use((config) => {
   if (config.url?.includes('/admin')) {
     config.timeout = 10000; // 10 seconds for admin requests (reduced from 30)
   }
+  // Increase timeout for progress requests (database queries can be slow)
+  if (config.url?.includes('/progress')) {
+    config.timeout = 15000; // 15 seconds for progress requests
+  }
   return config;
 });
 
@@ -57,14 +52,6 @@ api.interceptors.response.use(
           window.location.href = '/login';
         }
       }
-    }
-    
-    // Log network errors only in development
-    if ((error.code === 'ERR_NETWORK' || error.message === 'Network Error') && process.env.NODE_ENV === 'development') {
-      console.error('🌐 Network Error:', {
-        url: error.config?.url,
-        apiUrl: API_URL,
-      });
     }
     
     return Promise.reject(error);

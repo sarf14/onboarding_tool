@@ -1,12 +1,63 @@
 import express from 'express';
 import { courseContent } from '../data/courseContent';
 import { getQuiz } from '../data/quizzes';
-import { authenticate } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
+import { supabase } from '../config/database';
 
 const router = express.Router();
 
+// Helper: ensure user has completed all previous sections with 90%+ quiz
+async function ensureSectionAccess(userId: string, targetSection: number): Promise<{ allowed: boolean; message?: string }> {
+  // Section 1 is always allowed
+  if (targetSection <= 1) {
+    return { allowed: true };
+  }
+
+  // Gate sections 2-5 (section 1 is always accessible)
+  const maxSection = 5;
+  const sectionNum = Math.min(targetSection, maxSection);
+
+  // Fetch progress for all earlier sections (mapped to day 1-4)
+  const { data: progress, error } = await supabase
+    .from('progress')
+    .select('day, status, dayEndQuizScore')
+    .eq('userId', userId)
+    .lt('day', sectionNum)
+    .order('day', { ascending: true });
+
+  if (error) {
+    console.error('Error checking section access:', error);
+    // On error, be safe and deny access
+    return { 
+      allowed: false, 
+      message: 'Unable to verify your progress. Please try again or contact support.' 
+    };
+  }
+
+  const passingScore = 90;
+  const progressMap = new Map<number, { status: string; score: number | null }>();
+  (progress || []).forEach((p: any) => {
+    progressMap.set(p.day, { status: p.status, score: p.dayEndQuizScore });
+  });
+
+  // Ensure each previous section (1..sectionNum-1) is completed with 90%+
+  for (let day = 1; day < sectionNum; day++) {
+    const p = progressMap.get(day);
+    const score = p?.score ?? null;
+    const completed = p?.status === 'COMPLETED' && score !== null && score >= passingScore;
+    if (!completed) {
+      return {
+        allowed: false,
+        message: `You must complete Section ${day} with a quiz score of at least ${passingScore}% before accessing this section. Please review Section ${day} and retake its quiz.`,
+      };
+    }
+  }
+
+  return { allowed: true };
+}
+
 // Get all sections (for dashboard)
-router.get('/sections', authenticate, async (req, res) => {
+router.get('/sections', authenticate, async (req: AuthRequest, res) => {
   try {
     const sections = Object.keys(courseContent).map(key => {
       const section = courseContent[key as keyof typeof courseContent];
@@ -26,9 +77,20 @@ router.get('/sections', authenticate, async (req, res) => {
 });
 
 // Get course content for a section
-router.get('/section/:section', authenticate, async (req, res) => {
+router.get('/section/:section', authenticate, async (req: AuthRequest, res) => {
   try {
     const { section } = req.params;
+    const userId = req.user!.id;
+    const sectionNumber = parseInt(section, 10);
+    let warning: string | undefined;
+
+    if (!Number.isNaN(sectionNumber)) {
+      const access = await ensureSectionAccess(userId, sectionNumber);
+      if (!access.allowed) {
+        warning = access.message || 'Please complete previous sections (90% or higher) before attempting this section.';
+      }
+    }
+
     const sectionKey = `section${section}` as keyof typeof courseContent;
     const content = courseContent[sectionKey];
 
@@ -36,7 +98,7 @@ router.get('/section/:section', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Section content not found' });
     }
 
-    res.json({ section, content });
+    res.json({ section, content, warning });
   } catch (error) {
     console.error('Get content error:', error);
     res.status(500).json({ error: 'Failed to fetch content' });
@@ -44,9 +106,10 @@ router.get('/section/:section', authenticate, async (req, res) => {
 });
 
 // Get quiz for a section
-router.get('/quiz/:section', authenticate, async (req, res) => {
+router.get('/quiz/:section', authenticate, async (req: AuthRequest, res) => {
   try {
     const { section } = req.params;
+    const userId = req.user!.id;
     
     // Handle final quiz
     if (section === 'final') {
@@ -54,7 +117,9 @@ router.get('/quiz/:section', authenticate, async (req, res) => {
       if (!quiz) {
         return res.status(404).json({ error: 'Final quiz not found' });
       }
-      return res.json({ section: 'final', quiz });
+      const access = await ensureSectionAccess(userId, 5); // treat final as after section 4
+      const warning = !access.allowed ? (access.message || 'Please complete all sections (90% or higher) before taking the final assessment.') : undefined;
+      return res.json({ section: 'final', quiz, warning });
     }
     
     const sectionKey = `section${section}`;
@@ -64,7 +129,14 @@ router.get('/quiz/:section', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Quiz not found' });
     }
 
-    res.json({ section, quiz });
+    let warning: string | undefined;
+    if (!Number.isNaN(parseInt(section, 10))) {
+      const access = await ensureSectionAccess(userId, parseInt(section, 10));
+      if (!access.allowed) {
+        warning = access.message || 'Please complete previous sections (90% or higher) before attempting this quiz.';
+      }
+    }
+    res.json({ section, quiz, warning });
   } catch (error) {
     console.error('Get quiz error:', error);
     res.status(500).json({ error: 'Failed to fetch quiz' });
@@ -72,9 +144,19 @@ router.get('/quiz/:section', authenticate, async (req, res) => {
 });
 
 // Get activity content
-router.get('/activity/:section/:activityIndex', authenticate, async (req, res) => {
+router.get('/activity/:section/:activityIndex', authenticate, async (req: AuthRequest, res) => {
   try {
     const { section, activityIndex } = req.params;
+    const userId = req.user!.id;
+    const sectionNumber = parseInt(section, 10);
+    let warning: string | undefined;
+    if (!Number.isNaN(sectionNumber)) {
+      const access = await ensureSectionAccess(userId, sectionNumber);
+      if (!access.allowed) {
+        warning = access.message || 'Please complete previous sections (90% or higher) before attempting this activity.';
+      }
+    }
+
     const sectionKey = `section${section}` as keyof typeof courseContent;
     const content = courseContent[sectionKey];
     const activityIdx = parseInt(activityIndex);
@@ -154,7 +236,8 @@ router.get('/activity/:section/:activityIndex', authenticate, async (req, res) =
       videoUrl,
       videoUrl2: activityData.videoUrl2 || null,
       videoEmbedUrl2: activityData.videoEmbedUrl2 || null,
-      allActivities: content.activities.map((a: any) => typeof a === 'string' ? a : a.name)
+      allActivities: content.activities.map((a: any) => typeof a === 'string' ? a : a.name),
+      warning,
     });
   } catch (error) {
     console.error('Get activity error:', error);

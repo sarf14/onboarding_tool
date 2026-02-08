@@ -83,11 +83,29 @@ openssl rand -base64 32
 ```
 Or use an online generator. This is used to sign JWT tokens.
 
-### 3. Email Service (Optional - for future notifications)
-If you want to add email notifications later:
-- **Resend:** Get API key from https://resend.com
-- **SendGrid:** Get API key from https://sendgrid.com
-- **AWS SES:** Configure AWS credentials
+### 3. Email Service (Optional - for mentor assignment notifications)
+Email notifications are sent when mentors are assigned to mentees. If not configured, emails will be logged but not sent.
+
+**SMTP Configuration:**
+Add these to your `backend/.env`:
+```env
+SMTP_HOST=smtp.gmail.com          # Your SMTP server host
+SMTP_PORT=587                     # SMTP port (587 for TLS, 465 for SSL)
+SMTP_USER=your-email@gmail.com     # SMTP username/email
+SMTP_PASSWORD=your-app-password    # SMTP password or app password
+SMTP_FROM=noreply@autonex.com      # From email address (optional)
+```
+
+**Quick Setup Guides:**
+- **Gmail:** Enable 2FA → Generate App Password → Use as SMTP_PASSWORD
+- **Resend:** Sign up → Get API key → Use `resend` as SMTP_USER and API key as SMTP_PASSWORD
+- **SendGrid:** Sign up → Create API key → Use `apikey` as SMTP_USER and API key as SMTP_PASSWORD
+- **Mailgun:** Sign up → Get SMTP credentials → Use provided username/password
+- **AWS SES:** Set up SES → Create SMTP credentials → Use provided username/password
+
+**📖 For detailed step-by-step instructions, see [SMTP_CONFIGURATION_GUIDE.md](./SMTP_CONFIGURATION_GUIDE.md)**
+
+**Note:** If SMTP is not configured, the system will still work but emails won't be sent (only logged to console).
 
 ### 4. File Storage (Optional - for reports/files)
 If you want to store files:
