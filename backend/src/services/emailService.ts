@@ -309,7 +309,7 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
         console.log(`[Email] 📧 Brevo API response for mentor:`, JSON.stringify(mentorResult, null, 2));
         
         // Check response structure - Brevo returns messageId directly or in body
-        const messageId = mentorResult.body?.messageId || (mentorResult as any).messageId || mentorResult.messageId;
+        const messageId = mentorResult.body?.messageId || (mentorResult as any).messageId;
         
         if (messageId) {
           console.log(`[Email] ✅ Email sent successfully to mentor via Brevo API: ${data.mentorEmail}`);
@@ -354,7 +354,7 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
         console.log(`[Email] 📧 Brevo API response for mentee:`, JSON.stringify(menteeResult, null, 2));
         
         // Check response structure - Brevo returns messageId directly or in body
-        const messageId = menteeResult.body?.messageId || (menteeResult as any).messageId || menteeResult.messageId;
+        const messageId = menteeResult.body?.messageId || (menteeResult as any).messageId;
         
         if (messageId) {
           console.log(`[Email] ✅ Email sent successfully to mentee via Brevo API: ${data.menteeEmail}`);
