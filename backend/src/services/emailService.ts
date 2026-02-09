@@ -427,14 +427,15 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     return; // Exit early if not configured
   }
 
-  const providerName = isBrevoConfigured ? 'Brevo' : 'SMTP';
+  const isBrevoSMTP = smtpHost === 'smtp-relay.brevo.com' && smtpUser && smtpPassword;
+  const providerName = isBrevoSMTP ? 'Brevo' : 'SMTP';
   console.log(`[Email] 📧 Starting mentor assignment email process (using ${providerName})...`);
   console.log(`[Email]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
   console.log(`[Email]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
   console.log(`[Email]    Portal URL: ${portalUrl}`);
   console.log(`[Email]    Login URL: ${loginUrl}`);
   console.log(`[Email]    From address: ${smtpFrom}`);
-  if (isBrevoConfigured) {
+  if (isBrevoSMTP) {
     console.log(`[Email]    ✅ Using Brevo SMTP (no domain verification needed)`);
   }
 
