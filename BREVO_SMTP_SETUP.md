@@ -30,23 +30,52 @@ On the SMTP page, you'll see:
 - **Login:** Your email address (e.g., `your-email@example.com`)
 - **SMTP Password:** (This is what you need to generate)
 
-### Step 4: Generate Password
+### Step 4: Get SMTP Password/API Key
+
+**Option A: If you see "SMTP Password" section:**
 1. Look for the **"SMTP Password"** section
-2. You'll see either:
-   - A **"Generate"** button (if no password exists yet)
-   - Or **"Reset"** / **"Regenerate"** button (if password already exists)
-3. Click **"Generate"** (or "Reset" if regenerating)
+2. You might see:
+   - A **"Generate"** button
+   - Or **"Reset"** / **"Regenerate"** button
+   - Or **"Show"** / **"Reveal"** button (if password already exists)
+3. Click the button to generate or reveal the password
 4. **⚠️ IMPORTANT:** Copy the password immediately - Brevo will show it only once!
 5. The password will be a random string like: `aBc123XyZ456DeF789`
-6. **This is NOT your account password** - it's a separate SMTP-only password
+
+**Option B: If you see "API Key" instead (NEW METHOD):**
+Brevo might use API keys for SMTP authentication. In this case:
+1. Go to **"SMTP & API"** → **"API Keys"** tab (not SMTP tab)
+2. Click **"Generate a new API key"**
+3. Give it a name like "SMTP Authentication"
+4. Copy the API key (starts with `xkeysib-...`)
+5. **Use this API key as your SMTP_PASSWORD**
+
+**Option C: If you see "Master Password" or "SMTP Key":**
+1. Look for any password/key field in the SMTP section
+2. If it's hidden, click **"Show"** or **"Reveal"**
+3. If it says "Not set" or empty, look for **"Create"** or **"Set"** button
+4. Copy whatever password/key is shown
+
+**Option D: Check if SMTP is enabled:**
+- Some Brevo accounts need SMTP to be enabled first
+- Look for an **"Enable SMTP"** toggle or button
+- Enable it, then try again
 
 ### Step 5: Save Your Credentials
-Copy these values:
+
+**If using SMTP Password:**
 - **SMTP_HOST:** `smtp-relay.brevo.com`
 - **SMTP_PORT:** `587`
 - **SMTP_USER:** Your Brevo account email (shown on the page)
-- **SMTP_PASSWORD:** The password you just generated
-- **SMTP_FROM:** `noreply@sendinblue.com` (for free tier, no domain verification needed)
+- **SMTP_PASSWORD:** The SMTP password you generated
+- **SMTP_FROM:** `noreply@sendinblue.com` (for free tier)
+
+**If using API Key (Alternative Method):**
+- **SMTP_HOST:** `smtp-relay.brevo.com`
+- **SMTP_PORT:** `587`
+- **SMTP_USER:** Your Brevo account email
+- **SMTP_PASSWORD:** Your API key (from API Keys tab, starts with `xkeysib-...`)
+- **SMTP_FROM:** `noreply@sendinblue.com` (for free tier)
 
 ### Step 6: Add to Environment Variables
 In your deployment platform (Render/Railway/Vercel), add:
@@ -69,9 +98,34 @@ After adding the environment variables, redeploy your backend.
 ## Troubleshooting
 
 ### Can't Find "Generate" Button?
-- Make sure you're on the **"SMTP"** tab, not "API Keys"
-- Try refreshing the page
-- Check if you're on the free tier (some features may vary)
+
+**Try these solutions:**
+
+1. **Check API Keys Tab Instead:**
+   - Go to **"SMTP & API"** → **"API Keys"** tab
+   - Generate an API key there
+   - Use the API key as `SMTP_PASSWORD`
+   - Use your Brevo account email as `SMTP_USER`
+
+2. **Enable SMTP First:**
+   - Look for an **"Enable SMTP"** toggle or button
+   - Enable SMTP functionality first
+   - Then try to generate password
+
+3. **Check Account Type:**
+   - Free tier accounts might have different UI
+   - Try upgrading to a paid plan (then downgrade) to unlock features
+   - Or contact Brevo support
+
+4. **Use API Key Method:**
+   - If you can't find SMTP password, use API key instead:
+   - Generate API key from **"API Keys"** tab
+   - Use API key as `SMTP_PASSWORD`
+   - Use your email as `SMTP_USER`
+
+5. **Contact Brevo Support:**
+   - If nothing works, contact Brevo support
+   - They can help you get SMTP credentials
 
 ### Password Not Working?
 - **Did you use your account password?** → NO! You must generate a separate SMTP password
