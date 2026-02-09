@@ -292,6 +292,8 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     console.log('[Email] 📧 Using Brevo API (no SMTP port needed)...');
     console.log(`[Email]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
     console.log(`[Email]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
+    console.log(`[Email]    From address: ${fromEmail}`);
+    console.log(`[Email]    Brevo API Key configured: ${brevoApiKey ? 'Yes (length: ' + brevoApiKey.length + ')' : 'No'}`);
     
     // Send email to mentor using Brevo API
     if (data.mentorEmail && brevoApiClient) {
@@ -304,15 +306,33 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
         sendSmtpEmail.to = [{ email: data.mentorEmail, name: data.mentorName }];
         
         const mentorResult = await brevoApiClient.sendTransacEmail(sendSmtpEmail);
-        console.log(`[Email] ✅ Email sent successfully to mentor via Brevo API: ${data.mentorEmail}`);
-        console.log(`[Email]    Message ID: ${mentorResult.body?.messageId || 'N/A'}`);
+        console.log(`[Email] 📧 Brevo API response for mentor:`, JSON.stringify(mentorResult, null, 2));
+        
+        // Check response structure - Brevo returns messageId directly or in body
+        const messageId = mentorResult.body?.messageId || (mentorResult as any).messageId || mentorResult.messageId;
+        
+        if (messageId) {
+          console.log(`[Email] ✅ Email sent successfully to mentor via Brevo API: ${data.mentorEmail}`);
+          console.log(`[Email]    Message ID: ${messageId}`);
+        } else {
+          console.warn(`[Email] ⚠️  Brevo API returned success but no messageId for mentor: ${data.mentorEmail}`);
+          console.warn(`[Email]    Full response:`, JSON.stringify(mentorResult, null, 2));
+        }
       } catch (error: any) {
         console.error(`[Email] ❌ Failed to send email to mentor via Brevo API:`, error.message);
+        console.error(`[Email]    Error name: ${error.name || 'N/A'}`);
+        console.error(`[Email]    Error stack:`, error.stack);
         if (error.body) {
-          console.error(`[Email]    Error response:`, JSON.stringify(error.body, null, 2));
-        } else if (error.response) {
+          console.error(`[Email]    Error body:`, JSON.stringify(error.body, null, 2));
+        }
+        if (error.response) {
           console.error(`[Email]    Error response:`, JSON.stringify(error.response.body || error.response, null, 2));
         }
+        if (error.message) {
+          console.error(`[Email]    Error message:`, error.message);
+        }
+        // Log full error object
+        console.error(`[Email]    Full error:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       }
     }
 
@@ -331,15 +351,33 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
         sendSmtpEmail.to = [{ email: data.menteeEmail, name: data.menteeName }];
         
         const menteeResult = await brevoApiClient.sendTransacEmail(sendSmtpEmail);
-        console.log(`[Email] ✅ Email sent successfully to mentee via Brevo API: ${data.menteeEmail}`);
-        console.log(`[Email]    Message ID: ${menteeResult.body?.messageId || 'N/A'}`);
+        console.log(`[Email] 📧 Brevo API response for mentee:`, JSON.stringify(menteeResult, null, 2));
+        
+        // Check response structure - Brevo returns messageId directly or in body
+        const messageId = menteeResult.body?.messageId || (menteeResult as any).messageId || menteeResult.messageId;
+        
+        if (messageId) {
+          console.log(`[Email] ✅ Email sent successfully to mentee via Brevo API: ${data.menteeEmail}`);
+          console.log(`[Email]    Message ID: ${messageId}`);
+        } else {
+          console.warn(`[Email] ⚠️  Brevo API returned success but no messageId for mentee: ${data.menteeEmail}`);
+          console.warn(`[Email]    Full response:`, JSON.stringify(menteeResult, null, 2));
+        }
       } catch (error: any) {
         console.error(`[Email] ❌ Failed to send email to mentee via Brevo API:`, error.message);
+        console.error(`[Email]    Error name: ${error.name || 'N/A'}`);
+        console.error(`[Email]    Error stack:`, error.stack);
         if (error.body) {
-          console.error(`[Email]    Error response:`, JSON.stringify(error.body, null, 2));
-        } else if (error.response) {
+          console.error(`[Email]    Error body:`, JSON.stringify(error.body, null, 2));
+        }
+        if (error.response) {
           console.error(`[Email]    Error response:`, JSON.stringify(error.response.body || error.response, null, 2));
         }
+        if (error.message) {
+          console.error(`[Email]    Error message:`, error.message);
+        }
+        // Log full error object
+        console.error(`[Email]    Full error:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       }
     }
     
