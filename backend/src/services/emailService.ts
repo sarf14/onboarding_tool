@@ -245,6 +245,10 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
           ? `Email: ${data.loginCredentials.email}`
           : `Name: ${data.loginCredentials.name}`;
         
+        console.log(`[Email] Attempting to send email to mentee: ${data.menteeEmail}`);
+        console.log(`[Email]    From: ${fromEmail}`);
+        console.log(`[Email]    Subject: Welcome! Your Mentor Assignment - ${data.mentorName}`);
+        
         const menteeResult = await resendClient.emails.send({
           from: fromEmail,
           to: data.menteeEmail,
@@ -252,10 +256,19 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
           html: getMenteeEmailHTML(data, loginUrl, loginMethod),
           text: getMenteeEmailText(data, loginUrl, loginMethod),
         });
-        console.log(`[Email] ✅ Email sent successfully to mentee via Resend API: ${data.menteeEmail}`);
-        console.log(`[Email]    Message ID: ${menteeResult.data?.id || 'N/A'}`);
+        
+        if (menteeResult.error) {
+          console.error(`[Email] ❌ Resend API error for mentee ${data.menteeEmail}:`, menteeResult.error);
+          console.error(`[Email]    Error details:`, JSON.stringify(menteeResult.error, null, 2));
+        } else {
+          console.log(`[Email] ✅ Email sent successfully to mentee via Resend API: ${data.menteeEmail}`);
+          console.log(`[Email]    Message ID: ${menteeResult.data?.id || 'N/A'}`);
+          console.log(`[Email]    Full response:`, JSON.stringify(menteeResult.data || {}, null, 2));
+        }
       } catch (error: any) {
         console.error(`[Email] ❌ Failed to send email to mentee via Resend API:`, error.message);
+        console.error(`[Email]    Error stack:`, error.stack);
+        console.error(`[Email]    Full error:`, JSON.stringify(error, null, 2));
       }
     }
     

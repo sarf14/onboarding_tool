@@ -225,6 +225,26 @@ export default function AdminPanel() {
     }
   };
 
+  const unassignMentor = async (traineeId: string, traineeName: string) => {
+    if (!confirm(`Are you sure you want to unassign the mentor from ${traineeName}?`)) {
+      return;
+    }
+    
+    try {
+      const response = await api.delete(`/admin/remove-mentor/${traineeId}`);
+      console.log('Unassign mentor response:', response.data);
+      
+      // Refresh users and mentors to reflect changes
+      await Promise.all([fetchUsers(), fetchMentors()]);
+      
+      alert('Mentor unassigned successfully');
+    } catch (error: any) {
+      console.error('Failed to unassign mentor:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to unassign mentor';
+      alert(errorMsg);
+    }
+  };
+
   useEffect(() => {
     if (!token || !user) return;
     const timeoutId = setTimeout(() => {
@@ -721,7 +741,31 @@ export default function AdminPanel() {
                       )}
                     </td>
                     <td style={{ padding: '15px', color: '#efefef' }}>
-                      {u.mentor ? u.mentor.name : ''}
+                      {u.mentor ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{u.mentor.name}</span>
+                          {!u.roles.includes('ADMIN') && (
+                            <button
+                              onClick={() => unassignMentor(u.id, u.name)}
+                              style={{
+                                padding: '4px 10px',
+                                background: '#ef4444',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                fontSize: '11px',
+                                fontWeight: 600
+                              }}
+                              title="Unassign mentor"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ opacity: 0.5, fontStyle: 'italic' }}>No mentor</span>
+                      )}
                     </td>
                     <td style={{ padding: '15px' }}>
                       <span
