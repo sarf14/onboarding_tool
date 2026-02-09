@@ -1,10 +1,17 @@
 declare module '@getbrevo/brevo' {
-  export class TransactionalEmailsApi {
+  export class ApiClient {
+    static instance: ApiClient;
     authentications: {
-      apiKey: {
+      'api-key'?: {
+        apiKey: string;
+      };
+      apiKey?: {
         apiKey: string;
       };
     };
+  }
+
+  export class TransactionalEmailsApi {
     sendTransacEmail(sendSmtpEmail: SendSmtpEmail): Promise<{ body?: { messageId?: string } }>;
   }
 
