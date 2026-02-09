@@ -3,6 +3,7 @@ import { config } from '../config/env';
 import dns from 'dns';
 import { promisify } from 'util';
 import { Resend } from 'resend';
+import * as brevo from '@getbrevo/brevo';
 import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo';
 
 const resolve4 = promisify(dns.resolve4);
@@ -19,9 +20,28 @@ if (resendApiKey) {
 let brevoApiClient: TransactionalEmailsApi | null = null;
 const brevoApiKey = process.env.BREVO_API_KEY;
 if (brevoApiKey) {
-  brevoApiClient = new TransactionalEmailsApi();
-  brevoApiClient.authentications.apiKey.apiKey = brevoApiKey;
-  console.log('[Email] ✅ Brevo API client initialized (using API instead of SMTP)');
+  try {
+    // Use ApiClient singleton instance to set API key (required by Brevo SDK)
+    const defaultClient = (brevo as any).ApiClient?.instance;
+    if (defaultClient) {
+      const apiKeyAuth = defaultClient.authentications['api-key'];
+      if (apiKeyAuth) {
+        apiKeyAuth.apiKey = brevoApiKey;
+      } else {
+        // Fallback: try 'apiKey' instead of 'api-key'
+        const apiKeyAuthAlt = defaultClient.authentications?.apiKey;
+        if (apiKeyAuthAlt) {
+          apiKeyAuthAlt.apiKey = brevoApiKey;
+        }
+      }
+    }
+    brevoApiClient = new TransactionalEmailsApi();
+    console.log('[Email] ✅ Brevo API client initialized (using API instead of SMTP)');
+  } catch (error: any) {
+    console.error('[Email] ❌ Failed to initialize Brevo API client:', error.message);
+    console.error('[Email]    Brevo API will not be available. Check BREVO_API_KEY format.');
+    brevoApiClient = null;
+  }
 }
 
 // Create reusable transporter
