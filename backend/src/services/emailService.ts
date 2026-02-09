@@ -231,6 +231,20 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
   const isBrevoSMTP = smtpHost === 'smtp-relay.brevo.com' && smtpUser && smtpPassword;
   const isBrevoAPI = !!brevoApiClient;
   
+  // CRITICAL: On production (Render), Brevo SMTP will timeout due to port blocking
+  // Force use of Brevo API if SMTP is detected in production
+  if (isBrevoSMTP && !isBrevoAPI && process.env.NODE_ENV === 'production') {
+    console.error('[Email] ❌ CRITICAL ERROR: Brevo SMTP detected in production but BREVO_API_KEY is not set!');
+    console.error('[Email]    Render blocks SMTP ports (587, 465) - SMTP will ALWAYS timeout.');
+    console.error('[Email]    SOLUTION: Add BREVO_API_KEY environment variable on Render:');
+    console.error('[Email]    1. Go to https://app.brevo.com → Settings → SMTP & API → API Keys');
+    console.error('[Email]    2. Generate a new API key');
+    console.error('[Email]    3. Add BREVO_API_KEY=<your-api-key> to Render environment variables');
+    console.error('[Email]    4. Redeploy your backend');
+    console.error('[Email]    ⚠️  Emails will NOT be sent until BREVO_API_KEY is configured.');
+    return; // Exit early - don't waste time trying SMTP
+  }
+  
   // Use SMTP_FROM if set, otherwise default based on provider
   let fromEmail = process.env.SMTP_FROM;
   if (!fromEmail) {
@@ -402,12 +416,12 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
   const isConfigured = !!(smtpHost && smtpUser && smtpPassword);
   
   // Warn if trying to use SMTP on Render (ports are blocked)
-  if (isConfigured && process.env.NODE_ENV === 'production') {
-    console.warn('[Email] ⚠️  Using SMTP - some deployment platforms (like Render) block SMTP ports.');
-    console.warn('[Email]    If you get connection timeout errors, use Brevo API instead:');
-    console.warn('[Email]    1. Get API key from Brevo: Settings → SMTP & API → API Keys');
-    console.warn('[Email]    2. Add BREVO_API_KEY environment variable');
-    console.warn('[Email]    3. Remove RESEND_API_KEY if present');
+  if (isConfigured && process.env.NODE_ENV === 'production' && smtpHost === 'smtp-relay.brevo.com') {
+    console.error('[Email] ❌ STOPPING: Brevo SMTP detected in production without BREVO_API_KEY!');
+    console.error('[Email]    Render blocks SMTP ports - emails will fail with timeout.');
+    console.error('[Email]    REQUIRED: Add BREVO_API_KEY to Render environment variables.');
+    console.error('[Email]    See BREVO_API_SETUP.md for instructions.');
+    return; // Don't attempt SMTP - it will fail
   }
 
   if (!isConfigured) {
