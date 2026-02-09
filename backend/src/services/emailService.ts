@@ -427,7 +427,6 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     return; // Exit early if not configured
   }
 
-  const isBrevoSMTP = smtpHost === 'smtp-relay.brevo.com' && smtpUser && smtpPassword;
   const providerName = isBrevoSMTP ? 'Brevo' : 'SMTP';
   console.log(`[Email] 📧 Starting mentor assignment email process (using ${providerName})...`);
   console.log(`[Email]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
