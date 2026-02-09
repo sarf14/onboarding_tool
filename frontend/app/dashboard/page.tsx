@@ -725,8 +725,8 @@ export default function DashboardPage() {
                 );
               })}
               
-              {/* Final Quiz Card - Show when all 4 sections are completed */}
-              {completedSections === 4 && (
+              {/* Final Quiz Card - Show when all 5 sections are completed */}
+              {completedSections === 5 && (
                 <button
                   onClick={() => router.push('/section/final/quiz')}
                   style={{

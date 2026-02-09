@@ -86,7 +86,7 @@ router.get('/users', async (req, res) => {
       // Map quiz scores to progress entries
       const progressWithQuizzes = progress.map((p: any) => {
         const section = p.day;
-        const sectionQuiz = quizzes.find((q: any) => q.day === section && section <= 4);
+        const sectionQuiz = quizzes.find((q: any) => q.day === section && section <= 5);
         
         return {
           ...p,
@@ -99,11 +99,11 @@ router.get('/users', async (req, res) => {
       const completedSections = progressWithQuizzes.filter((p: any) => {
         const isCompleted = p.status === 'COMPLETED';
         if (p.day) {
-          return isCompleted && p.day <= 4;
+          return isCompleted && p.day <= 5;
         }
         return isCompleted;
       }).length;
-      const overallProgress = Math.round((completedSections / 4) * 100);
+      const overallProgress = Math.round((completedSections / 5) * 100);
 
       return {
         ...user,

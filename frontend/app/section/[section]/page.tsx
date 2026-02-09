@@ -38,7 +38,7 @@ export default function SectionContentPage() {
 
   const fetchQuizStatus = async () => {
     try {
-      // Only fetch quiz status for sections 1-4, not final
+      // Only fetch quiz status for sections 1-5, not final
       if (section === 'final') {
         return;
       }
@@ -280,7 +280,7 @@ export default function SectionContentPage() {
   };
 
   const sectionNum = parseInt(section);
-  const totalSections = 4;
+  const totalSections = 5;
 
   return (
     <div style={{
@@ -839,7 +839,7 @@ export default function SectionContentPage() {
                   if (sectionNum < totalSections) {
                     router.push(`/section/${sectionNum + 1}`);
                   } else if (sectionNum === totalSections) {
-                    // After section 4, go to final quiz
+                    // After section 5, go to final quiz
                     router.push('/section/final/quiz');
                   }
                 }}

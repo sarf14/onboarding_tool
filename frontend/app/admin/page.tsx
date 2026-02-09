@@ -693,12 +693,12 @@ export default function AdminPanel() {
                       </div>
                     </td>
                     <td style={{ padding: '15px', color: '#efefef' }}>
-                      {u.progress}% ({u.completedSections}/4)
+                      {u.progress}% ({u.completedSections}/5)
                     </td>
                     <td style={{ padding: '15px', color: '#efefef' }}>
                       {u.sectionProgress && u.sectionProgress.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                          {[1, 2, 3, 4].map((sectionNum) => {
+                          {[1, 2, 3, 4, 5].map((sectionNum) => {
                             const sectionProgress = u.sectionProgress?.find((p: any) => {
                               const section = p.section || p.day;
                               return section === sectionNum;
@@ -725,7 +725,7 @@ export default function AdminPanel() {
                             }
                             return null;
                           })}
-                          {![1, 2, 3, 4].some((sectionNum) => {
+                          {![1, 2, 3, 4, 5].some((sectionNum) => {
                             const sectionProgress = u.sectionProgress?.find((p: any) => {
                               const section = p.section || p.day;
                               return section === sectionNum;

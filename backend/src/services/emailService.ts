@@ -257,18 +257,34 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
           text: getMenteeEmailText(data, loginUrl, loginMethod),
         });
         
+        // Log the full result for debugging
+        console.log(`[Email] Resend API response for mentee:`, JSON.stringify(menteeResult, null, 2));
+        
         if (menteeResult.error) {
           console.error(`[Email] ❌ Resend API error for mentee ${data.menteeEmail}:`, menteeResult.error);
           console.error(`[Email]    Error details:`, JSON.stringify(menteeResult.error, null, 2));
-        } else {
+          // Try to get more details about the error
+          if (menteeResult.error.message) {
+            console.error(`[Email]    Error message: ${menteeResult.error.message}`);
+          }
+          if (menteeResult.error.name) {
+            console.error(`[Email]    Error name: ${menteeResult.error.name}`);
+          }
+        } else if (menteeResult.data) {
           console.log(`[Email] ✅ Email sent successfully to mentee via Resend API: ${data.menteeEmail}`);
-          console.log(`[Email]    Message ID: ${menteeResult.data?.id || 'N/A'}`);
-          console.log(`[Email]    Full response:`, JSON.stringify(menteeResult.data || {}, null, 2));
+          console.log(`[Email]    Message ID: ${menteeResult.data.id || 'N/A'}`);
+          if (menteeResult.data.id) {
+            console.log(`[Email]    ✅ Confirmed: Email queued with ID ${menteeResult.data.id}`);
+          }
+        } else {
+          console.warn(`[Email] ⚠️  Unexpected Resend API response format for mentee ${data.menteeEmail}`);
+          console.warn(`[Email]    Response:`, JSON.stringify(menteeResult, null, 2));
         }
       } catch (error: any) {
-        console.error(`[Email] ❌ Failed to send email to mentee via Resend API:`, error.message);
+        console.error(`[Email] ❌ Exception caught while sending email to mentee via Resend API:`, error.message);
+        console.error(`[Email]    Error name: ${error.name || 'N/A'}`);
         console.error(`[Email]    Error stack:`, error.stack);
-        console.error(`[Email]    Full error:`, JSON.stringify(error, null, 2));
+        console.error(`[Email]    Full error:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       }
     }
     

@@ -294,13 +294,13 @@ export default function QuizPage() {
       return;
     }
     
-    const totalSections = 4;
+    const totalSections = 5;
     if (section === 'final') {
       router.push('/dashboard');
     } else if (sectionNum < totalSections) {
       router.push(`/section/${sectionNum + 1}`);
     } else if (sectionNum === totalSections) {
-      // After section 4, go to dashboard
+      // After section 5, go to dashboard
       router.push('/dashboard');
     } else {
       // After section 3, redirect to final quiz
@@ -1305,7 +1305,7 @@ export default function QuizPage() {
                   }}
                 >
                   {section === 'final' ? 'Go to Dashboard →' : 
-                   parseInt(section) < 4 ? 'Continue to Next Section →' : 
+                   parseInt(section) < 5 ? 'Continue to Next Section →' : 
                    'Go to Dashboard →'}
                 </button>
               </div>

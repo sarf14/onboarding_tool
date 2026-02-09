@@ -371,7 +371,7 @@ export default function MentorDashboard() {
                     </div>
                     <p style={{ color: '#efefef', fontSize: '14px', marginBottom: '10px', fontFamily: "'Inter', sans-serif", opacity: 0.8 }}>{mentee.email}</p>
                     <div style={{ display: 'flex', gap: '15px', fontSize: '14px', color: '#efefef', fontFamily: "'Inter', sans-serif", opacity: 0.9 }}>
-                      <span>Section {mentee.currentSection}/4</span>
+                      <span>Section {mentee.currentSection}/5</span>
                       <span>•</span>
                       <span>{mentee.completedSections} completed</span>
                       <span>•</span>
@@ -459,7 +459,7 @@ export default function MentorDashboard() {
                 textTransform: 'uppercase'
               }}>Section Progress</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {[1, 2, 3, 4].map((sectionNum) => {
+                {[1, 2, 3, 4, 5].map((sectionNum) => {
                   const sectionProgress = selectedMentee.sectionProgress?.find((p: any) => p.section === sectionNum);
                   const status = sectionProgress?.status || 'NOT_STARTED';
                   const quizScore = sectionProgress?.quizScore;
