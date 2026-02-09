@@ -3,7 +3,7 @@ import { config } from '../config/env';
 import dns from 'dns';
 import { promisify } from 'util';
 import { Resend } from 'resend';
-import * as brevo from '@getbrevo/brevo';
+import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo';
 
 const resolve4 = promisify(dns.resolve4);
 
@@ -16,11 +16,11 @@ if (resendApiKey) {
 }
 
 // Initialize Brevo API client (if API key is available)
-let brevoApiClient: brevo.TransactionalEmailsApi | null = null;
+let brevoApiClient: TransactionalEmailsApi | null = null;
 const brevoApiKey = process.env.BREVO_API_KEY;
 if (brevoApiKey) {
-  brevoApiClient = new brevo.TransactionalEmailsApi();
-  brevoApiClient.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
+  brevoApiClient = new TransactionalEmailsApi();
+  brevoApiClient.authentications.apiKey.apiKey = brevoApiKey;
   console.log('[Email] ✅ Brevo API client initialized (using API instead of SMTP)');
 }
 
@@ -249,9 +249,9 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     console.log(`[Email]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
     
     // Send email to mentor using Brevo API
-    if (data.mentorEmail) {
+    if (data.mentorEmail && brevoApiClient) {
       try {
-        const sendSmtpEmail = new brevo.SendSmtpEmail();
+        const sendSmtpEmail = new SendSmtpEmail();
         sendSmtpEmail.subject = `New Mentee Assigned: ${data.menteeName}`;
         sendSmtpEmail.htmlContent = getMentorEmailHTML(data, loginUrl);
         sendSmtpEmail.textContent = getMentorEmailText(data, loginUrl);
@@ -260,23 +260,25 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
         
         const mentorResult = await brevoApiClient.sendTransacEmail(sendSmtpEmail);
         console.log(`[Email] ✅ Email sent successfully to mentor via Brevo API: ${data.mentorEmail}`);
-        console.log(`[Email]    Message ID: ${mentorResult.messageId || 'N/A'}`);
+        console.log(`[Email]    Message ID: ${mentorResult.body?.messageId || 'N/A'}`);
       } catch (error: any) {
         console.error(`[Email] ❌ Failed to send email to mentor via Brevo API:`, error.message);
-        if (error.response) {
+        if (error.body) {
+          console.error(`[Email]    Error response:`, JSON.stringify(error.body, null, 2));
+        } else if (error.response) {
           console.error(`[Email]    Error response:`, JSON.stringify(error.response.body || error.response, null, 2));
         }
       }
     }
 
     // Send email to mentee using Brevo API
-    if (data.menteeEmail) {
+    if (data.menteeEmail && brevoApiClient) {
       try {
         const loginMethod = data.loginCredentials.email 
           ? `Email: ${data.loginCredentials.email}`
           : `Name: ${data.loginCredentials.name}`;
         
-        const sendSmtpEmail = new brevo.SendSmtpEmail();
+        const sendSmtpEmail = new SendSmtpEmail();
         sendSmtpEmail.subject = `Welcome! Your Mentor Assignment - ${data.mentorName}`;
         sendSmtpEmail.htmlContent = getMenteeEmailHTML(data, loginUrl, loginMethod);
         sendSmtpEmail.textContent = getMenteeEmailText(data, loginUrl, loginMethod);
@@ -285,10 +287,12 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
         
         const menteeResult = await brevoApiClient.sendTransacEmail(sendSmtpEmail);
         console.log(`[Email] ✅ Email sent successfully to mentee via Brevo API: ${data.menteeEmail}`);
-        console.log(`[Email]    Message ID: ${menteeResult.messageId || 'N/A'}`);
+        console.log(`[Email]    Message ID: ${menteeResult.body?.messageId || 'N/A'}`);
       } catch (error: any) {
         console.error(`[Email] ❌ Failed to send email to mentee via Brevo API:`, error.message);
-        if (error.response) {
+        if (error.body) {
+          console.error(`[Email]    Error response:`, JSON.stringify(error.body, null, 2));
+        } else if (error.response) {
           console.error(`[Email]    Error response:`, JSON.stringify(error.response.body || error.response, null, 2));
         }
       }
