@@ -1,5 +1,16 @@
 # Brevo SMTP Password Generation - Step by Step
 
+## ⚠️ IMPORTANT: SMTP Password vs Account Password
+
+**NO, they are NOT the same!**
+
+- **Account Password:** Your login password for Brevo website (DO NOT use this for SMTP)
+- **SMTP Password:** A separate, generated password specifically for SMTP authentication (this is what you need)
+
+You **MUST generate** a separate SMTP password. You cannot use your account login password for SMTP.
+
+---
+
 ## How to Generate SMTP Password in Brevo
 
 ### Step 1: Log In to Brevo
@@ -21,9 +32,13 @@ On the SMTP page, you'll see:
 
 ### Step 4: Generate Password
 1. Look for the **"SMTP Password"** section
-2. Click the **"Generate"** button (or "Create Password" / "Generate Password")
-3. **⚠️ IMPORTANT:** Copy the password immediately - Brevo will show it only once!
-4. The password will be a random string like: `aBc123XyZ456DeF789`
+2. You'll see either:
+   - A **"Generate"** button (if no password exists yet)
+   - Or **"Reset"** / **"Regenerate"** button (if password already exists)
+3. Click **"Generate"** (or "Reset" if regenerating)
+4. **⚠️ IMPORTANT:** Copy the password immediately - Brevo will show it only once!
+5. The password will be a random string like: `aBc123XyZ456DeF789`
+6. **This is NOT your account password** - it's a separate SMTP-only password
 
 ### Step 5: Save Your Credentials
 Copy these values:
@@ -59,9 +74,11 @@ After adding the environment variables, redeploy your backend.
 - Check if you're on the free tier (some features may vary)
 
 ### Password Not Working?
-- Make sure you copied the password correctly (no extra spaces)
-- Regenerate a new password if needed
+- **Did you use your account password?** → NO! You must generate a separate SMTP password
+- Make sure you copied the SMTP password correctly (no extra spaces)
+- Regenerate a new SMTP password if needed
 - Check that `SMTP_USER` matches your Brevo account email exactly
+- Make sure you're using the **generated SMTP password**, not your login password
 
 ### Still Having Issues?
 - Check Brevo documentation: https://help.brevo.com/hc/en-us/articles/209467485
