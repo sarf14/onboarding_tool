@@ -213,6 +213,7 @@ export interface MentorAssignmentEmailData {
 export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData): Promise<void> {
   const portalUrl = 'https://onboarding-tool-psi.vercel.app';
   const loginUrl = `${portalUrl}/login`;
+  // Use SMTP_FROM if set, otherwise default to resend.dev (testing only - requires domain verification for production)
   const fromEmail = process.env.SMTP_FROM || 'onboarding@resend.dev';
 
   // Check if Resend API is available (preferred method - no SMTP port blocking)
@@ -269,6 +270,15 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
           }
           if (menteeResult.error.name) {
             console.error(`[Email]    Error name: ${menteeResult.error.name}`);
+          }
+          
+          // Check if it's a domain verification error
+          if (menteeResult.error.statusCode === 403 && menteeResult.error.message?.includes('verify a domain')) {
+            console.error(`[Email]    ⚠️  DOMAIN VERIFICATION REQUIRED`);
+            console.error(`[Email]    Resend free tier only allows sending to your own email address.`);
+            console.error(`[Email]    To send to other recipients, verify a domain at https://resend.com/domains`);
+            console.error(`[Email]    Then update SMTP_FROM to use your verified domain (e.g., noreply@yourdomain.com)`);
+            console.error(`[Email]    See RESEND_DOMAIN_VERIFICATION.md for detailed instructions`);
           }
         } else if (menteeResult.data) {
           console.log(`[Email] ✅ Email sent successfully to mentee via Resend API: ${data.menteeEmail}`);
