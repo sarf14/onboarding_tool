@@ -232,8 +232,15 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
           html: getMentorEmailHTML(data, loginUrl),
           text: getMentorEmailText(data, loginUrl),
         });
-        console.log(`[Email] ✅ Email sent successfully to mentor via Resend API: ${data.mentorEmail}`);
-        console.log(`[Email]    Message ID: ${mentorResult.data?.id || 'N/A'}`);
+        
+        if (mentorResult.error) {
+          const error = mentorResult.error as any;
+          console.error(`[Email] ❌ Resend API error for mentor ${data.mentorEmail}:`, error);
+          console.error(`[Email]    Error details:`, JSON.stringify(error, null, 2));
+        } else if (mentorResult.data) {
+          console.log(`[Email] ✅ Email sent successfully to mentor via Resend API: ${data.mentorEmail}`);
+          console.log(`[Email]    Message ID: ${mentorResult.data.id || 'N/A'}`);
+        }
       } catch (error: any) {
         console.error(`[Email] ❌ Failed to send email to mentor via Resend API:`, error.message);
       }
@@ -262,18 +269,19 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
         console.log(`[Email] Resend API response for mentee:`, JSON.stringify(menteeResult, null, 2));
         
         if (menteeResult.error) {
-          console.error(`[Email] ❌ Resend API error for mentee ${data.menteeEmail}:`, menteeResult.error);
-          console.error(`[Email]    Error details:`, JSON.stringify(menteeResult.error, null, 2));
+          const error = menteeResult.error as any;
+          console.error(`[Email] ❌ Resend API error for mentee ${data.menteeEmail}:`, error);
+          console.error(`[Email]    Error details:`, JSON.stringify(error, null, 2));
           // Try to get more details about the error
-          if (menteeResult.error.message) {
-            console.error(`[Email]    Error message: ${menteeResult.error.message}`);
+          if (error.message) {
+            console.error(`[Email]    Error message: ${error.message}`);
           }
-          if (menteeResult.error.name) {
-            console.error(`[Email]    Error name: ${menteeResult.error.name}`);
+          if (error.name) {
+            console.error(`[Email]    Error name: ${error.name}`);
           }
           
           // Check if it's a domain verification error
-          if (menteeResult.error.statusCode === 403 && menteeResult.error.message?.includes('verify a domain')) {
+          if (error.statusCode === 403 && error.message?.includes('verify a domain')) {
             console.error(`[Email]    ⚠️  DOMAIN VERIFICATION REQUIRED`);
             console.error(`[Email]    Resend free tier only allows sending to your own email address.`);
             console.error(`[Email]    To send to other recipients, verify a domain at https://resend.com/domains`);
