@@ -22,19 +22,27 @@ Here are email services you can use **without verifying a domain** (or with mini
    - Verify your email
 
 2. **Get SMTP Credentials**
-   - Go to **Settings** → **SMTP & API**
-   - Click **"SMTP"** tab
-   - Copy your SMTP credentials:
+   - Log in to your Brevo account
+   - Click on your **profile icon** (top right) → **Settings**
+   - In the left sidebar, click **"SMTP & API"**
+   - You'll see two tabs: **"SMTP"** and **"API Keys"** - click on **"SMTP"** tab
+   - You'll see your SMTP server details:
      - **Server:** `smtp-relay.brevo.com`
      - **Port:** `587`
-     - **Login:** Your Brevo account email
-     - **Password:** Your SMTP password (click "Generate" if needed)
+     - **Login:** Your Brevo account email (shown on the page)
+   
+3. **Generate SMTP Password**
+   - On the SMTP page, look for **"SMTP Password"** section
+   - Click the **"Generate"** button (or "Create Password" button)
+   - **IMPORTANT:** Copy the password immediately - you won't be able to see it again!
+   - The password will look something like: `aBc123XyZ456DeF789` (random characters)
+   - **Save this password** - this is your `SMTP_PASSWORD`
 
 3. **Update Environment Variables** (in your deployment platform):
    ```
    SMTP_HOST=smtp-relay.brevo.com
    SMTP_PORT=587
-   SMTP_USER=your-email@example.com
+   SMTP_USER=a1ebde001@smtp-brevo.com
    SMTP_PASSWORD=your-brevo-smtp-password
    SMTP_FROM=noreply@sendinblue.com
    ```
