@@ -3,6 +3,7 @@ import { config } from '../config/env';
 import dns from 'dns';
 import { promisify } from 'util';
 import { Resend } from 'resend';
+import * as brevo from '@getbrevo/brevo';
 
 const resolve4 = promisify(dns.resolve4);
 
@@ -12,6 +13,15 @@ const resendApiKey = process.env.RESEND_API_KEY;
 if (resendApiKey) {
   resendClient = new Resend(resendApiKey);
   console.log('[Email] ✅ Resend API client initialized (using API instead of SMTP)');
+}
+
+// Initialize Brevo API client (if API key is available)
+let brevoApiClient: brevo.TransactionalEmailsApi | null = null;
+const brevoApiKey = process.env.BREVO_API_KEY;
+if (brevoApiKey) {
+  brevoApiClient = new brevo.TransactionalEmailsApi();
+  brevoApiClient.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
+  console.log('[Email] ✅ Brevo API client initialized (using API instead of SMTP)');
 }
 
 // Create reusable transporter
@@ -214,25 +224,81 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
   const portalUrl = 'https://onboarding-tool-psi.vercel.app';
   const loginUrl = `${portalUrl}/login`;
   
-  // Check if Brevo SMTP is configured (prefer Brevo over Resend API)
+  // Check if Brevo is configured (API or SMTP)
   const smtpHost = process.env.SMTP_HOST;
   const smtpUser = process.env.SMTP_USER;
   const smtpPassword = process.env.SMTP_PASSWORD;
-  const isBrevoConfigured = smtpHost === 'smtp-relay.brevo.com' && smtpUser && smtpPassword;
+  const isBrevoSMTP = smtpHost === 'smtp-relay.brevo.com' && smtpUser && smtpPassword;
+  const isBrevoAPI = !!brevoApiClient;
   
   // Use SMTP_FROM if set, otherwise default based on provider
   let fromEmail = process.env.SMTP_FROM;
   if (!fromEmail) {
-    if (isBrevoConfigured) {
-      fromEmail = smtpUser; // Use Brevo account email as from address
+    if (isBrevoSMTP || isBrevoAPI) {
+      fromEmail = smtpUser || process.env.BREVO_FROM_EMAIL || 'noreply@sendinblue.com';
     } else {
       fromEmail = 'onboarding@resend.dev'; // Resend default (requires domain verification)
     }
   }
 
-  // Prefer Brevo SMTP over Resend API (Brevo doesn't require domain verification)
-  // Only use Resend API if Brevo is not configured
-  if (resendClient && !isBrevoConfigured) {
+  // Priority: Brevo API > Resend API > Brevo SMTP > Other SMTP
+  // Use Brevo API if available (no port blocking issues)
+  if (brevoApiClient) {
+    console.log('[Email] 📧 Using Brevo API (no SMTP port needed)...');
+    console.log(`[Email]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
+    console.log(`[Email]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
+    
+    // Send email to mentor using Brevo API
+    if (data.mentorEmail) {
+      try {
+        const sendSmtpEmail = new brevo.SendSmtpEmail();
+        sendSmtpEmail.subject = `New Mentee Assigned: ${data.menteeName}`;
+        sendSmtpEmail.htmlContent = getMentorEmailHTML(data, loginUrl);
+        sendSmtpEmail.textContent = getMentorEmailText(data, loginUrl);
+        sendSmtpEmail.sender = { name: 'Autonex Onboarding', email: fromEmail };
+        sendSmtpEmail.to = [{ email: data.mentorEmail, name: data.mentorName }];
+        
+        const mentorResult = await brevoApiClient.sendTransacEmail(sendSmtpEmail);
+        console.log(`[Email] ✅ Email sent successfully to mentor via Brevo API: ${data.mentorEmail}`);
+        console.log(`[Email]    Message ID: ${mentorResult.messageId || 'N/A'}`);
+      } catch (error: any) {
+        console.error(`[Email] ❌ Failed to send email to mentor via Brevo API:`, error.message);
+        if (error.response) {
+          console.error(`[Email]    Error response:`, JSON.stringify(error.response.body || error.response, null, 2));
+        }
+      }
+    }
+
+    // Send email to mentee using Brevo API
+    if (data.menteeEmail) {
+      try {
+        const loginMethod = data.loginCredentials.email 
+          ? `Email: ${data.loginCredentials.email}`
+          : `Name: ${data.loginCredentials.name}`;
+        
+        const sendSmtpEmail = new brevo.SendSmtpEmail();
+        sendSmtpEmail.subject = `Welcome! Your Mentor Assignment - ${data.mentorName}`;
+        sendSmtpEmail.htmlContent = getMenteeEmailHTML(data, loginUrl, loginMethod);
+        sendSmtpEmail.textContent = getMenteeEmailText(data, loginUrl, loginMethod);
+        sendSmtpEmail.sender = { name: 'Autonex Onboarding', email: fromEmail };
+        sendSmtpEmail.to = [{ email: data.menteeEmail, name: data.menteeName }];
+        
+        const menteeResult = await brevoApiClient.sendTransacEmail(sendSmtpEmail);
+        console.log(`[Email] ✅ Email sent successfully to mentee via Brevo API: ${data.menteeEmail}`);
+        console.log(`[Email]    Message ID: ${menteeResult.messageId || 'N/A'}`);
+      } catch (error: any) {
+        console.error(`[Email] ❌ Failed to send email to mentee via Brevo API:`, error.message);
+        if (error.response) {
+          console.error(`[Email]    Error response:`, JSON.stringify(error.response.body || error.response, null, 2));
+        }
+      }
+    }
+    
+    return; // Exit early - Brevo API handled emails
+  }
+
+  // Fallback to Resend API if Brevo API is not available
+  if (resendClient && !isBrevoSMTP) {
     console.log('[Email] 📧 Using Resend API (no SMTP port needed)...');
     console.log(`[Email]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
     console.log(`[Email]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
@@ -324,12 +390,21 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     return; // Exit early - Resend API handled emails
   }
 
-  // Use SMTP (Brevo or other SMTP provider)
+  // Use SMTP (Brevo or other SMTP provider) - Last resort if API methods failed
   const transporter = await getTransporter();
   const smtpFrom = fromEmail || process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@autonex.com';
 
   // Check if SMTP is properly configured
   const isConfigured = !!(smtpHost && smtpUser && smtpPassword);
+  
+  // Warn if trying to use SMTP on Render (ports are blocked)
+  if (isConfigured && process.env.NODE_ENV === 'production') {
+    console.warn('[Email] ⚠️  Using SMTP - some deployment platforms (like Render) block SMTP ports.');
+    console.warn('[Email]    If you get connection timeout errors, use Brevo API instead:');
+    console.warn('[Email]    1. Get API key from Brevo: Settings → SMTP & API → API Keys');
+    console.warn('[Email]    2. Add BREVO_API_KEY environment variable');
+    console.warn('[Email]    3. Remove RESEND_API_KEY if present');
+  }
 
   if (!isConfigured) {
     console.warn('⚠️  EMAIL SERVICE NOT CONFIGURED');
