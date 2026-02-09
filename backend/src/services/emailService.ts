@@ -213,11 +213,26 @@ export interface MentorAssignmentEmailData {
 export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData): Promise<void> {
   const portalUrl = 'https://onboarding-tool-psi.vercel.app';
   const loginUrl = `${portalUrl}/login`;
-  // Use SMTP_FROM if set, otherwise default to resend.dev (testing only - requires domain verification for production)
-  const fromEmail = process.env.SMTP_FROM || 'onboarding@resend.dev';
+  
+  // Check if Brevo SMTP is configured (prefer Brevo over Resend API)
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+  const isBrevoConfigured = smtpHost === 'smtp-relay.brevo.com' && smtpUser && smtpPassword;
+  
+  // Use SMTP_FROM if set, otherwise default based on provider
+  let fromEmail = process.env.SMTP_FROM;
+  if (!fromEmail) {
+    if (isBrevoConfigured) {
+      fromEmail = smtpUser; // Use Brevo account email as from address
+    } else {
+      fromEmail = 'onboarding@resend.dev'; // Resend default (requires domain verification)
+    }
+  }
 
-  // Check if Resend API is available (preferred method - no SMTP port blocking)
-  if (resendClient) {
+  // Prefer Brevo SMTP over Resend API (Brevo doesn't require domain verification)
+  // Only use Resend API if Brevo is not configured
+  if (resendClient && !isBrevoConfigured) {
     console.log('[Email] 📧 Using Resend API (no SMTP port needed)...');
     console.log(`[Email]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
     console.log(`[Email]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
@@ -309,21 +324,22 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     return; // Exit early - Resend API handled emails
   }
 
-  // Fallback to SMTP if Resend API is not available
+  // Use SMTP (Brevo or other SMTP provider)
   const transporter = await getTransporter();
-  const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@autonex.com';
+  const smtpFrom = fromEmail || process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@autonex.com';
 
   // Check if SMTP is properly configured
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPassword = process.env.SMTP_PASSWORD;
   const isConfigured = !!(smtpHost && smtpUser && smtpPassword);
 
   if (!isConfigured) {
     console.warn('⚠️  EMAIL SERVICE NOT CONFIGURED');
-    console.warn('   To enable email sending, add one of these to backend/.env:');
-    console.warn('   Option 1 (Recommended): RESEND_API_KEY=re_... (uses HTTPS, no port blocking)');
-    console.warn('   Option 2: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD');
+    console.warn('   To enable email sending, add SMTP credentials to backend/.env:');
+    console.warn('   For Brevo (Recommended - no domain verification needed):');
+    console.warn('     SMTP_HOST=smtp-relay.brevo.com');
+    console.warn('     SMTP_PORT=587');
+    console.warn('     SMTP_USER=your-brevo-email@example.com');
+    console.warn('     SMTP_PASSWORD=your-brevo-smtp-key');
+    console.warn('     SMTP_FROM=your-brevo-email@example.com');
     console.warn('');
     console.warn('   Email details that would be sent:');
     console.warn(`   - To Mentor (${data.mentorEmail || 'N/A'}): New mentee ${data.menteeName} assigned`);
@@ -332,12 +348,16 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
     return; // Exit early if not configured
   }
 
-  console.log('[SMTP] 📧 Starting mentor assignment email process (using SMTP)...');
-  console.log(`[SMTP]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
-  console.log(`[SMTP]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
-  console.log(`[SMTP]    Portal URL: ${portalUrl}`);
-  console.log(`[SMTP]    Login URL: ${loginUrl}`);
-  console.log(`[SMTP]    From address: ${smtpFrom}`);
+  const providerName = isBrevoConfigured ? 'Brevo' : 'SMTP';
+  console.log(`[Email] 📧 Starting mentor assignment email process (using ${providerName})...`);
+  console.log(`[Email]    Mentor: ${data.mentorName} (${data.mentorEmail || 'no email'})`);
+  console.log(`[Email]    Mentee: ${data.menteeName} (${data.menteeEmail || 'no email'})`);
+  console.log(`[Email]    Portal URL: ${portalUrl}`);
+  console.log(`[Email]    Login URL: ${loginUrl}`);
+  console.log(`[Email]    From address: ${smtpFrom}`);
+  if (isBrevoConfigured) {
+    console.log(`[Email]    ✅ Using Brevo SMTP (no domain verification needed)`);
+  }
 
   // Helper functions for email content
   function getMentorEmailHTML(data: MentorAssignmentEmailData, loginUrl: string): string {
