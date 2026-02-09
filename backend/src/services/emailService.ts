@@ -233,6 +233,7 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
   
   // CRITICAL: On Render and other platforms, Brevo SMTP will timeout due to port blocking
   // Detect Render environment (Render sets RENDER=true or we can check hostname)
+  // Declare once at the top to reuse throughout the function
   const isRender = process.env.RENDER === 'true' || 
                    process.env.RENDER_SERVICE_NAME !== undefined ||
                    (process.env.NODE_ENV === 'production' && !process.env.VERCEL);
@@ -427,10 +428,7 @@ export async function sendMentorAssignmentEmails(data: MentorAssignmentEmailData
   
   // This check should never be reached if Brevo SMTP is configured (caught earlier)
   // But keep it as a safety net for other SMTP providers
-  const isRender = process.env.RENDER === 'true' || 
-                   process.env.RENDER_SERVICE_NAME !== undefined ||
-                   (process.env.NODE_ENV === 'production' && !process.env.VERCEL);
-  
+  // Reuse isRender variable declared at the top of the function
   if (isConfigured && isRender && smtpHost === 'smtp-relay.brevo.com') {
     console.error('[Email] ❌ STOPPING: Brevo SMTP detected on Render without BREVO_API_KEY!');
     console.error('[Email]    Render blocks SMTP ports - emails will fail with timeout.');
