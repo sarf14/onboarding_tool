@@ -44,7 +44,44 @@ npm run dev
 
 ---
 
-## Option 2: Resend (Recommended for Production)
+## Option 2: Brevo (Sendinblue) - RECOMMENDED ⭐ (No Domain Needed)
+
+Brevo is perfect if you don't have a domain to verify. It offers 300 emails/day free with no domain verification required.
+
+### Step 1: Sign Up
+1. Go to https://www.brevo.com
+2. Sign up for a free account
+3. Verify your email address
+
+### Step 2: Get SMTP Credentials
+1. Go to **Settings** → **SMTP & API**
+2. Click on **"SMTP"** tab
+3. Copy your SMTP credentials:
+   - **Server:** `smtp-relay.brevo.com`
+   - **Port:** `587`
+   - **Login:** Your Brevo account email
+   - **Password:** Click "Generate" to create an SMTP password if needed
+
+### Step 3: Add to backend/.env
+```env
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USER=your-email@example.com
+SMTP_PASSWORD=your-brevo-smtp-password
+SMTP_FROM=your-email@example.com
+```
+
+### Step 4: Restart Backend
+```bash
+cd backend
+npm run dev
+```
+
+**Note:** Remove `RESEND_API_KEY` from environment variables if you're switching from Resend to Brevo.
+
+---
+
+## Option 3: Resend (Requires Domain Verification)
 
 Resend is a modern email API service with a generous free tier (3,000 emails/month).
 
